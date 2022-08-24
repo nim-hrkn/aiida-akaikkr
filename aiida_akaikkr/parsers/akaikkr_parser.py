@@ -13,12 +13,18 @@ import aiida
 from pyakaikkr import AkaikkrJob
 from aiida.plugins import DataFactory
 
+import numpy as np
+
 
 aiida_major_version = int(aiida.__version__.split(".")[0])
 
 SinglefileData = DataFactory('singlefile')
+ArrayData = DataFactory('array')
+FolderData = DataFactory('folder')
+StructureData = DataFactory('structure')
 
-def _get_basic_properties(output_card: (str, list), get_history: bool = True):
+
+def get_basic_properties(output_card: (str, list), get_history: bool = True):
     """get basic properties of akaikkr from output card
 
         output_card can be a filename or a list of string.
@@ -55,7 +61,9 @@ def _get_basic_properties(output_card: (str, list), get_history: bool = True):
     results["local_moment"] = job.get_local_moment(output_card)
     results["type_charge"] = job.get_type_charge(output_card)
     results["prim_vec"] = job.get_prim_vec(output_card)
-    results["atom_coord"] = job.get_atom_coord(output_card)
+    atom_coords, atom_names = job.get_atom_coord(output_card)
+    results['atom_coords'] = atom_coords
+    results['atom_names'] = atom_names
     core_names = ["1s", "2s", "2p", "3s", "3d", "4s", "4p", "4d", "4f"]
     core_exist, _core_level = job.get_core_level(output_card,  core_state=core_names)
     core_level = {}
@@ -68,7 +76,7 @@ def _get_basic_properties(output_card: (str, list), get_history: bool = True):
     return results
 
 
-specxCalculation = CalculationFactory("akaikkr.calcjob")
+specxCalculation = CalculationFactory("akaikkr.basic_calcjob")
 
 
 class specx_parser(Parser):
@@ -95,6 +103,9 @@ class specx_parser(Parser):
 
         :returns: an exit code, if parsing fails (or nothing if parsing succeeds)
         """
+
+        with open("/home/max/tmp/aiidalog", "a") as f:
+            f.write('parse start\n')
         output_filename = self.node.get_option("output_filename")
 
         # Check that folder content is as expected
@@ -107,7 +118,9 @@ class specx_parser(Parser):
 
         potential_filename = 'pot.dat'
         files_retrieved = output_folder.list_object_names()
-        files_expected = [output_filename, potential_filename]
+        files_expected = [output_filename]
+        if self.node.inputs.retrieve_potential.value:
+            files_expected.append(potential_filename)
         # Note: set(A) <= set(B) checks whether A is a subset of B
         if not set(files_expected) <= set(files_retrieved):
             self.logger.error(
@@ -115,16 +128,80 @@ class specx_parser(Parser):
             )
             return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
 
+        if "spc" in self.node.inputs.go.value:
+            awk_files_expected = 'pot.dat_*spc'
+            from fnmatch import fnmatch
+            have_spc = False
+            for name in files_retrieved:
+                if fnmatch(name, awk_files_expected):
+                    have_spc = True
+            if not have_spc:
+                self.logger.error(f'failed to find spc files={awk_files_expected}')
+                return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+
+            klabel_files_expected = 'klabel.json'
+            if klabel_files_expected not in files_retrieved:
+                self.logger.error(f'failed to find file={klabel_files_expected}')
+                return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+
         # add a potential file
-        with output_folder.open(potential_filename, "rb") as handle:
-            potential = SinglefileData(file=handle)
-            self.out('potential', potential)
+        if self.node.inputs.retrieve_potential.value:
+            with output_folder.open(potential_filename, "rb") as handle:
+                potential = SinglefileData(file=handle)
+                self.out('potential', potential)
 
         # add output file
         self.logger.info(f"Parsing '{output_filename}'")
         content = output_folder.get_object_content(output_filename).splitlines()
-        output_node = _get_basic_properties(content)
+        output_node = get_basic_properties(content)
         self.out("results", Dict(dict=output_node))
+
+        with output_folder.open(output_filename, "r") as handle:
+
+            job = AkaikkrJob("dummy_directory")
+            py_structure = job.make_pymatgenstructure(handle, change_atom_name=False)
+
+            from pymatgen.io.ase import AseAtomsAdaptor
+            aseadaptor = AseAtomsAdaptor()
+            ase_structure = aseadaptor.get_atoms(py_structure)
+            structuredata = StructureData(ase=ase_structure)
+ 
+            self.out('structure', structuredata)
+
+        if self.node.inputs.go.value == 'dos':
+            with output_folder.open(output_filename, "r") as handle:
+                job = AkaikkrJob("dummy_directory")
+                dosdata = job.get_dos(handle)
+                dosarray = ArrayData()
+                energy = np.array(dosdata[0])
+                dos = np.array(dosdata[1])
+                dosarray.set_array('energy', energy)
+                dosarray.set_array('dos', dos)
+                self.out('dos', dosarray)
+
+            with output_folder.open(output_filename, "r") as handle:
+                job = AkaikkrJob("dummy_directory")
+                pdosdata = job.get_pdos(handle)
+                pdosarray = ArrayData()
+                energy = np.array(pdosdata[0])
+                dos = np.array(pdosdata[1])
+                pdosarray.set_array('energy', energy)
+                pdosarray.set_array('pdos', dos)
+                self.out('pdos', pdosarray)
+
+        if self.node.inputs.go.value[:3] == 'spc':
+            port_list = ["Awk_up", "Awk_dn"]
+            postfix_list = ["up.spc", "dn.spc"]
+            for portname, postfix in zip(port_list, postfix_list):
+                name = "_".join(["pot.dat", postfix])
+                if fnmatch(name, awk_files_expected):
+                    with output_folder.open(name, "rb") as handle:
+                        Awkfile = SinglefileData(handle)
+                    self.out(portname, Awkfile)
+            import json
+            with output_folder.open("klabel.json", "r") as handle:
+                klabel = json.load(handle)
+                self.out('klabel', Dict(dict=klabel))
 
         if aiida_major_version == 2:
             return ExitCode(0)
