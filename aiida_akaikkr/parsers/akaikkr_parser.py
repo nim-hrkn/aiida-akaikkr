@@ -11,9 +11,12 @@ from aiida.orm import Dict
 import aiida
 
 from pyakaikkr import AkaikkrJob
+from aiida.plugins import DataFactory
+
 
 aiida_major_version = int(aiida.__version__.split(".")[0])
 
+SinglefileData = DataFactory('singlefile')
 
 def _get_basic_properties(output_card: (str, list), get_history: bool = True):
     """get basic properties of akaikkr from output card
@@ -97,17 +100,25 @@ class specx_parser(Parser):
         # Check that folder content is as expected
         if aiida_major_version == 2:
             output_folder = self.retrieved.base.repository
-        else:
+        elif aiida_major_version == 1:
             output_folder = self.retrieved
+        else:
+            raise ValueError("unknown aiida major verson. aiida version={aiida.__version__}")
 
+        potential_filename = 'pot.dat'
         files_retrieved = output_folder.list_object_names()
-        files_expected = [output_filename]
+        files_expected = [output_filename, potential_filename]
         # Note: set(A) <= set(B) checks whether A is a subset of B
         if not set(files_expected) <= set(files_retrieved):
             self.logger.error(
                 f"Found files '{files_retrieved}', expected to find '{files_expected}'"
             )
             return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+
+        # add a potential file
+        with output_folder.open(potential_filename, "rb") as handle:
+            potential = SinglefileData(file=handle)
+            self.out('potential', potential)
 
         # add output file
         self.logger.info(f"Parsing '{output_filename}'")
