@@ -7,17 +7,19 @@ from aiida.common import datastructures
 from aiida.engine import CalcJob
 from aiida.orm import Str, Dict, Bool, Int, Float
 from aiida.plugins import DataFactory
+from aiida.common.exceptions import InputValidationError
 
 from pyakaikkr import AkaikkrJob
 from pyakaikkr.HighsymmetryKpath import HighSymKPath
 
 # from aiida.plugins import DataFactory
-
+import os
 
 SinglefileData = DataFactory('singlefile')
 ArrayData = DataFactory('array')
 FolderData = DataFactory('folder')
 StructureData = DataFactory('structure')
+RemoteData = DataFactory('remote')
 
 
 class specx_basic(CalcJob):
@@ -56,7 +58,7 @@ class specx_basic(CalcJob):
         spec.input("displc", valid_type=Bool, help="add displc or not.")
         spec.input("retrieve_potential", valid_type=Bool, default=lambda: Bool(cls._RETRIEVE_POTENTIAL),
                    help="retrieve potential file or not.")
-        spec.input("potential", valid_type=(Str, SinglefileData), default=lambda: Str(""),
+        spec.input("potential", valid_type=(Str, SinglefileData, RemoteData), default=lambda: Str(""),
                    help="potential file.",)
 
         spec.output("results", valid_type=Dict, help="output properties.",)
@@ -97,19 +99,28 @@ class specx_basic(CalcJob):
         calcinfo = datastructures.CalcInfo()
         calcinfo.codes_info = [codeinfo]
 
-        potential = None
+        local_potential = None
+        remote_potential_folder = None
         if isinstance(self.inputs.potential, Str):
             if len(self.inputs.potential.value) > 0:
                 print("potential", self.inputs.potential.value)
-                potential = SinglefileData(self.inputs.potential.value)
+                local_potential = SinglefileData(self.inputs.potential.value)
         elif isinstance(self.inputs.potential, SinglefileData):
-            potential = self.inputs.potential
-        if potential is not None:
-            calcinfo.local_copy_list = [(potential.uuid, potential.filename, self._POTENTIAL_FILE)]
+            local_potential = self.inputs.potential
+        elif isinstance(self.inputs.potential, RemoteData):
+            remote_potential_folder = self.inputs.potential
+        else:
+            raise InputValidationError('unknown potential type. type={type(self.inputs.potential)}')
+
+        if local_potential is not None:
+            calcinfo.local_copy_list = [(local_potential.uuid, local_potential.filename, self._POTENTIAL_FILE)]
+        if remote_potential_folder is not None:
+            remote_potential_path = os.path.join(remote_potential_folder.get_remote_path(), self._POTENTIAL_FILE)
+            print("copy remote data", remote_potential_path, remote_potential_path)
+            calcinfo.remote_copy_list = [(remote_potential_folder.computer.uuid, remote_potential_path, ".")]
 
         calcinfo.retrieve_list = [self.metadata.options.output_filename,
                                   self.metadata.options.input_filename]
-
         if self.inputs.retrieve_potential.value:
             calcinfo.retrieve_list.append(self._POTENTIAL_FILE)
 
