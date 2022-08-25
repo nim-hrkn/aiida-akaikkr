@@ -104,10 +104,6 @@ class specx_parser(Parser):
         :returns: an exit code, if parsing fails (or nothing if parsing succeeds)
         """
 
-        with open("/home/max/tmp/aiidalog", "a") as f:
-            f.write('parse start\n')
-        output_filename = self.node.get_option("output_filename")
-
         # Check that folder content is as expected
         if aiida_major_version == 2:
             output_folder = self.retrieved.base.repository
@@ -116,35 +112,37 @@ class specx_parser(Parser):
         else:
             raise ValueError("unknown aiida major verson. aiida version={aiida.__version__}")
 
-        # TODO
-        # Checking size must be done in case case.
-        potential_filename = 'pot.dat'
         files_retrieved = output_folder.list_object_names()
-        files_expected = [output_filename]
+
+        output_filename = self.node.get_option("output_filename")
+        if output_filename not in files_retrieved:
+            return self.exit_codes.ERROR_OUTPUT_STDOUT_MISSING
+
+        input_filename = self.node.get_option("input_filename")
+        if input_filename not in files_retrieved:
+            return self.exit_codes.ERROR_OUTPUT_STDIN_MISSING
+
+        potential_filename = 'pot.dat'
         if self.node.inputs.retrieve_potential.value:
-            files_expected.append(potential_filename)
-        # Note: set(A) <= set(B) checks whether A is a subset of B
-        if not set(files_expected) <= set(files_retrieved):
-            self.logger.error(
-                f"Found files '{files_retrieved}', expected to find '{files_expected}'"
-            )
-            return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+            if potential_filename not in files_retrieved:
+                return self.exit_codes.ERROR_OUTPUT_POTENTIAL_MISSING
 
         if "spc" in self.node.inputs.go.value:
-            awk_files_expected = 'pot.dat_*spc'
-            from fnmatch import fnmatch
-            have_spc = False
-            for name in files_retrieved:
-                if fnmatch(name, awk_files_expected):
-                    have_spc = True
-            if not have_spc:
-                self.logger.error(f'failed to find spc files={awk_files_expected}')
-                return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+            if self.node.inputs.magtype == "nmag":
+                _potential_file = f'{potential_filename}_up.spc'
+                if _potential_file not in files_retrieved:
+                    return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
+            else:
+                _potential_file = f'{potential_filename}_up.spc'
+                if _potential_file not in files_retrieved:
+                    return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
+                _potential_file = f'{potential_filename}_up.spc'
+                if _potential_file not in files_retrieved:
+                    return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
 
             klabel_files_expected = 'klabel.json'
             if klabel_files_expected not in files_retrieved:
-                self.logger.error(f'failed to find file={klabel_files_expected}')
-                return self.exit_codes.ERROR_MISSING_OUTPUT_FILES
+                return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
 
         # add a potential file
         if self.node.inputs.retrieve_potential.value:
@@ -152,47 +150,58 @@ class specx_parser(Parser):
                 potential = SinglefileData(file=handle)
                 self.out('potential', potential)
 
-        # add output file
+        # parse output file
         self.logger.info(f"Parsing '{output_filename}'")
         content = output_folder.get_object_content(output_filename).splitlines()
-        output_node = get_basic_properties(content)
+        try:
+            output_node = get_basic_properties(content)
+        except KKRValueAquisitionError:
+            return self.exit_codes.ERROR_OUTPUT_STDOUT_PARSE
         self.out("results", Dict(dict=output_node))
 
-        with output_folder.open(output_filename, "r") as handle:
+        if self.node.inputs.magtype != "lmd":
+            with output_folder.open(output_filename, "r") as handle:
 
-            job = AkaikkrJob("dummy_directory")
-            py_structure = job.make_pymatgenstructure(handle, change_atom_name=False)
+                job = AkaikkrJob("dummy_directory")
+                py_structure = job.make_pymatgenstructure(handle, change_atom_name=False)
 
-            from pymatgen.io.ase import AseAtomsAdaptor
-            aseadaptor = AseAtomsAdaptor()
-            structure_output = True
-            try:
-                ase_structure = aseadaptor.get_atoms(py_structure)
-            except ValueError:
-                # ASE.Atoms don't accept lmd occupancy.
-                structure_output = False
-                self.logger.info('no structure output probably because magtyp=lmd.')
-            if structure_output:
+                from pymatgen.io.ase import AseAtomsAdaptor
+                aseadaptor = AseAtomsAdaptor()
+                try:
+                    ase_structure = aseadaptor.get_atoms(py_structure)
+                except ValueError:
+                    self.logger.error('failed to convert pymatgen.Structure to ase.Atoms')
+                    # ASE.Atoms don't accept the occupancies of lmd. It has anclr=[26,26], occup=[50,50]. anclr can't be the same Z in ase.Atoms.
+                    # It can't happens because go!=lmd.
+                    return self.exit_codes.ERROR_UNEXPECTED_PARSER_EXCEPTION
+
                 structuredata = StructureData(ase=ase_structure)
                 self.out('structure', structuredata)
 
         if self.node.inputs.go.value == 'dos':
+            from pyakaikkr.Error import KKRValueAquisitionError
             with output_folder.open(output_filename, "r") as handle:
                 job = AkaikkrJob("dummy_directory")
-                dosdata = job.get_dos(handle)
+                try:
+                    energy, dos = job.get_dos(handle)
+                except KKRValueAquisitionError:
+                    return self.exit_codes.ERROR_OUTPUT_DOS_PARSE
                 dosarray = ArrayData()
-                energy = np.array(dosdata[0])
-                dos = np.array(dosdata[1])
+                energy = np.array(energy)
+                dos = np.array(dos)
                 dosarray.set_array('energy', energy)
                 dosarray.set_array('dos', dos)
                 self.out('dos', dosarray)
 
             with output_folder.open(output_filename, "r") as handle:
                 job = AkaikkrJob("dummy_directory")
-                pdosdata = job.get_pdos(handle)
+                try:
+                    energy,  dos = job.get_pdos(handle)
+                except KKRValueAquisitionError:
+                    return self.exit_codes.ERROR_OUTPUT_PDOS_PARSE
                 pdosarray = ArrayData()
-                energy = np.array(pdosdata[0])
-                dos = np.array(pdosdata[1])
+                energy = np.array(energy)
+                dos = np.array(dos)
                 pdosarray.set_array('energy', energy)
                 pdosarray.set_array('pdos', dos)
                 self.out('pdos', pdosarray)
@@ -200,31 +209,41 @@ class specx_parser(Parser):
         if self.node.inputs.go.value[:1] == 'j':
             with output_folder.open(output_filename, "r") as handle:
                 job = AkaikkrJob("dummy_directory")
-                df_jij = job.get_jij_as_dataframe(handle)
+                try:
+                    df_jij = job.get_jij_as_dataframe(handle)
+                except KKRValueAquisitionError:
+                    return self.exit_codes.ERROR_OUTPUT_JIJ_PARSE
                 jijarray = Dict()
                 for name in df_jij.columns.tolist():
                     value = df_jij[name].values
-
                     jijarray[name] = value.tolist()
                 self.out('Jij', jijarray)
 
         if self.node.inputs.go.value[:1] == 'j' or self.node.inputs.go.value == 'tc':
             with output_folder.open(output_filename, "r") as handle:
-                tc = job.get_curie_temperature(handle)
+                try:
+                    tc = job.get_curie_temperature(handle)
+                except KKRValueAquisitionError:
+                    return self.exit_codes.ERROR_OUTPUT_CURIE_TEMPERATURE_PARSE
                 self.out('Tc', Float(tc))
 
         if self.node.inputs.go.value[:3] == 'spc':
-            port_list = ["Awk_up", "Awk_dn"]
-            postfix_list = ["up.spc", "dn.spc"]
+            if self.node.inputs.magtype.value == "nmag":
+                port_list = ["Awk_up"]
+                postfix_list = ["up.spc"]
+            else:
+                port_list = ["Awk_up", "Awk_dn"]
+                postfix_list = ["up.spc", "dn.spc"]
             for portname, postfix in zip(port_list, postfix_list):
-                name = "_".join(["pot.dat", postfix])
-                if fnmatch(name, awk_files_expected):
-                    with output_folder.open(name, "rb") as handle:
-                        Awkfile = SinglefileData(handle)
-                    self.out(portname, Awkfile)
+                name = "_".join([potential_filename, postfix])
+                with output_folder.open(name, "rb") as handle:
+                    Awkfile = SinglefileData(handle)
+                    # possibly the content is null.
+                self.out(portname, Awkfile)
             import json
             with output_folder.open("klabel.json", "r") as handle:
                 klabel = json.load(handle)
+                # possibly the content is null.
                 self.out('klabel', Dict(dict=klabel))
 
         if aiida_major_version == 2:

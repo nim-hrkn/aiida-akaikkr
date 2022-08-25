@@ -4,6 +4,7 @@
     "entry_points" : {
 	"aiida.calculations": [
 	    "akaikkr.basic  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_basic",
+	    "akaikkr.go  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_go",
 	    "akaikkr.dos  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_dos",
 	    "akaikkr.jij  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_jij",
 	    "akaikkr.tc  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_tc",
