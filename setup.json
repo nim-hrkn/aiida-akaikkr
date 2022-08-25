@@ -1,0 +1,18 @@
+{
+    "name" : "aiida-akaikkr",
+    "version" : "0.1.0",
+    "entry_points" : {
+	"aiida.calculations": [
+	    "akaikkr.basic  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_basic",
+	    "akaikkr.dos  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_dos",
+	    "akaikkr.jij  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_jij",
+	    "akaikkr.tc  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_tc",
+	    "akaikkr.spc  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_spc",
+	    "akaikkr.fsm  = aiida_akaikkr.calculations.akaikkr_calcjob: specx_fsm"
+	],
+	"aiida.parsers":  [
+	    "akaikkr.parser  = aiida_akaikkr.parsers.akaikkr_parser: specx_parser" 
+        ]
+    }
+}
+

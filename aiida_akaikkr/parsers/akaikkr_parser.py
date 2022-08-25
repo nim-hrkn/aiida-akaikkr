@@ -7,7 +7,7 @@ from aiida.common import exceptions
 from aiida.engine import ExitCode
 from aiida.parsers.parser import Parser
 from aiida.plugins import CalculationFactory
-from aiida.orm import Dict
+from aiida.orm import Dict, Float
 import aiida
 
 from pyakaikkr import AkaikkrJob
@@ -76,7 +76,7 @@ def get_basic_properties(output_card: (str, list), get_history: bool = True):
     return results
 
 
-specxCalculation = CalculationFactory("akaikkr.basic_calcjob")
+specxCalculation = CalculationFactory("akaikkr.basic")
 
 
 class specx_parser(Parser):
@@ -116,6 +116,8 @@ class specx_parser(Parser):
         else:
             raise ValueError("unknown aiida major verson. aiida version={aiida.__version__}")
 
+        # TODO
+        # Checking size must be done in case case.
         potential_filename = 'pot.dat'
         files_retrieved = output_folder.list_object_names()
         files_expected = [output_filename]
@@ -163,10 +165,16 @@ class specx_parser(Parser):
 
             from pymatgen.io.ase import AseAtomsAdaptor
             aseadaptor = AseAtomsAdaptor()
-            ase_structure = aseadaptor.get_atoms(py_structure)
-            structuredata = StructureData(ase=ase_structure)
- 
-            self.out('structure', structuredata)
+            structure_output = True
+            try:
+                ase_structure = aseadaptor.get_atoms(py_structure)
+            except ValueError:
+                # ASE.Atoms don't accept lmd occupancy.
+                structure_output = False
+                self.logger.info('no structure output probably because magtyp=lmd.')
+            if structure_output:
+                structuredata = StructureData(ase=ase_structure)
+                self.out('structure', structuredata)
 
         if self.node.inputs.go.value == 'dos':
             with output_folder.open(output_filename, "r") as handle:
@@ -188,6 +196,22 @@ class specx_parser(Parser):
                 pdosarray.set_array('energy', energy)
                 pdosarray.set_array('pdos', dos)
                 self.out('pdos', pdosarray)
+
+        if self.node.inputs.go.value[:1] == 'j':
+            with output_folder.open(output_filename, "r") as handle:
+                job = AkaikkrJob("dummy_directory")
+                df_jij = job.get_jij_as_dataframe(handle)
+                jijarray = Dict()
+                for name in df_jij.columns.tolist():
+                    value = df_jij[name].values
+
+                    jijarray[name] = value.tolist()
+                self.out('Jij', jijarray)
+
+        if self.node.inputs.go.value[:1] == 'j' or self.node.inputs.go.value == 'tc':
+            with output_folder.open(output_filename, "r") as handle:
+                tc = job.get_curie_temperature(handle)
+                self.out('Tc', Float(tc))
 
         if self.node.inputs.go.value[:3] == 'spc':
             port_list = ["Awk_up", "Awk_dn"]
