@@ -49,7 +49,7 @@ inputcard は `AkaikkrJob.make_inputcard(parameters ∪ structure ∪ {magtyp, g
 
 `pdos`（ArrayData）: `energy` (nE,)、`pdos` (nspin, ncomp, nE, nl_max)、`nl_per_type` (ncomp,)。第 2 軸は type ではなく CPA 成分を平坦に並べたものです（NiFe なら Fe, Ni の 2 つ）。型ごとに `mxl` が違うと l の数が違うので、足りない分は NaN で埋めてあります。
 
-`Jij`（Dict）: `get_jij_as_dataframe` の各列をリストにしたもの。`Tc`: `get_curie_temperature`。
+`Jij`（Dict）: `get_jij_as_dataframe` の各列をリストにしたもの（`aiida_akaikkr.plot.jij_dataframe(node)` で DataFrame に戻せる。図と CSV は `plot_results.py --jij` / `akaikkr-aiida plot --jij-pk`）。`Tc`: `get_curie_temperature`。
 
 `Awk_up` / `Awk_dn`: `pot.dat_up.spc` / `pot.dat_dn.spc` をそのまま。`nmag` では up だけ。`klabel`: `HighSymKPath` が書いた `klabel.json`（`{"kpath": [[{"\\Gamma": [0,0,0]}, {"X": [...]}, ...]]}`）。
 

@@ -38,6 +38,7 @@ akaikkr-aiida results --pk 2805                       # chain なら各モード
 akaikkr-aiida submit-followup --go-pk 2630 --mode tc
 akaikkr-aiida dos --pk 2644 --emin -1 --emax 0.5 --max-points 100
 akaikkr-aiida plot --dos-pk 2644 --spc-pk 2654 --outdir figures --prefix Cu
+akaikkr-aiida plot --jij-pk 2057 --outdir figures --prefix FeRh05Pt05     # J_ij(R) の図と <prefix>_jij.csv
 akaikkr-aiida compare --pks 2805 --reference-json ../AkaiKKRPythonUtil/tests/akaikkr/reference/ifort.json
 akaikkr-aiida provenance --pk 2805 --fmt pdf
 ```
@@ -80,7 +81,7 @@ exec ssh -o BatchMode=yes mygardenx2 /home/kino/miniforge3/envs/akaikkr/bin/akai
 2. `kkr_presets` で物質を選ぶ、または CIF を用意する。
 3. `kkr_submit_chain(preset="Fe", code="specx-akaikkr@mygardenx2-slurm")` → WorkChain の pk。
 4. `kkr_wait(pk)` を数回、または `kkr_process(pk)`。`children` に go と後続の pk と状態が出る。
-5. `kkr_results(pk)` で全エネルギー・モーメント・Tc、`kkr_plot(dos_pk, spc_pk)` で図、`kkr_compare_reference(pks="<pk>", reference_json=...)` で参照との比較、`kkr_provenance(pk)` でグラフ。
+5. `kkr_results(pk)` で全エネルギー・モーメント・Tc、`kkr_plot(dos_pk, spc_pk, jij_pk)` で図（jij は `kkr_jij(pk)` で表も読める）、`kkr_compare_reference(pks="<pk>", reference_json=...)` で参照との比較、`kkr_provenance(pk)` でグラフ。
 
 ## 4a. 実行例: Claude Code から Cu を流す（2026-09-24）
 

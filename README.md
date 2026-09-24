@@ -76,7 +76,8 @@ Ready-made scripts in `example/`:
 - `run_cu_go_dos_spc.py` – Cu go → dos → spc31 from a CIF (stored as `SinglefileData`).
 - `run_examples.py` – the whole AkaiKKRPythonUtil test set (`--displc` for the akaikkr_cnd build, adds `cnd`).
 - `compare_reference.py` – compare a result JSON with `tests/*/reference/ifort.json`.
-- `plot_results.py` – DOS / PDOS / A(w,k) figures from finished nodes (`example/figures/`).
+- `plot_results.py` – DOS / PDOS / A(w,k) / J_ij(R) figures and the J_ij CSV from finished nodes (`example/figures/`);
+  `run_examples.py --figdir` writes them for the whole run.
 
 ## Command line and MCP
 

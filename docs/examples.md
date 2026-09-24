@@ -66,10 +66,19 @@ te の相対差、moment、Tc、抵抗率・伝導度を並べます。2026-09-2
 ## 4. plot_results.py（図）
 
 ```bash
-python example/plot_results.py --dos <dos pk> --spc <spc pk> --outdir example/figures --prefix Fe
+python example/plot_results.py --dos <dos pk> --spc <spc pk> --jij <j3.0 pk> --outdir example/figures --prefix Fe
 ```
 
-`<prefix>_dos.png`（全 DOS、mag は up を +、down を −）、`<prefix>_pdos.png`（CPA 成分ごと、s/p/d/f）、`<prefix>_Awk_up.png`（nmag 以外は `_Awk_dn.png` も）を書きます。横軸は AkaiKKR 出力どおり E_F 基準の Ry です。`example/figures/` には 12 物質分が入っています。
+`<prefix>_dos.png`（全 DOS、mag は up を +、down を −）、`<prefix>_pdos.png`（CPA 成分ごと、s/p/d/f）、`<prefix>_Awk_up.png`（nmag 以外は `_Awk_dn.png` も）を書きます。横軸は AkaiKKR 出力どおり E_F 基準の Ry です。
+
+DOS / PDOS には E − E_F = −|ewidth| の一点鎖線を入れます。ewidth はポテンシャルを作った go（`inputs.potential.creator`）のもので、SCF のエネルギー積分路の下端（cemesh.f: ebtm = ef − ewidth）です。この線より下の状態は自己無撞着な電荷に入っていないので、価電子帯の底が線より右にあることを確かめてください。go が provenance に無いとき（ポテンシャルをファイルから与えたとき）は dos 自身の ewidth を使います。dos のエネルギー mesh は [E_F − ref·ewidth, E_F + (1 − ref)·ewidth]（cemesr.f、ref は akaikkr ビルドで 0.75、akaikkr_cnd ビルドでは 0.5 が既定。begin_option の `cemesr_ref=` で変更）なので、線が mesh の外に落ちるときは横軸を線まで広げます。go と dos の ewidth の違いは [ewidth.md](ewidth.md) を見てください。`example/figures/` には 12 物質分が入っています。
+
+`--jij` は AkaiKKRPythonUtil の testrun の j30 後処理（`Goj30.postscript` の `jij.csv` と `JijPlotter.make_typepair` / `make_comppair` の `Jij_*.png`）に相当します。
+
+- `<prefix>_jij.csv`: `Jij` 出力 Dict をそのまま表にしたもの（列は `get_jij_as_dataframe` と同じ: site1, site2, comp1, comp2, a, b, c, distance, J_ij, J_ij(meV), dgn, type1, type2）。
+- `<prefix>_Jij_<type1>-<type2>.png`: type 対ごとに 1 枚。CPA の type では (comp1, comp2) の成分対ごとに 1 パネル（AlMnFeCo なら 10 パネル、FeRh0.5Pt0.5 の Fe-RhPt なら Fe-Rh と Fe-Pt の 2 パネル）で、成分名は `results["type_of_site"]` の `comp_shortname` から取ります。横軸は AkaiKKR 出力どおり格子定数 a 単位の距離、縦軸は meV、1 枚の中で軸範囲は共通、題に `Tc` を添えます。
+
+`run_examples.py --figdir example/figures` を付けると、走り終わった dos / spc / j3.0 の図と CSV をまとめて書きます。`example/figures/` には Fe, Co, Ni, NiFe, FeRh05Pt05, AlMnFeCo_bcc, Co2MnSi, SmCo5_oc の J_ij が入っています（2026-09-24、akaikkr セットの pk 1836〜2324）。
 
 ## 5. provenance graph
 

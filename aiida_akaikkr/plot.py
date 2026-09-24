@@ -1,4 +1,4 @@
-"""DOS / PDOS / A(w,k) figures from finished aiida-akaikkr nodes (matplotlib imported lazily)."""
+"""DOS / PDOS / A(w,k) / J_ij figures from finished aiida-akaikkr nodes (matplotlib imported lazily)."""
 import os
 
 # fixed categorical order (never cycled): blue, orange, aqua, yellow
@@ -18,7 +18,7 @@ def _plt():
     return plt
 
 
-def _style(ax, xlabel, ylabel, title):
+def _style(ax, xlabel, ylabel, title, efermi=True):
     ax.set_xlabel(xlabel, color=INK)
     ax.set_ylabel(ylabel, color=INK)
     ax.set_title(title, loc="left", color=INK, fontsize=11)
@@ -28,7 +28,31 @@ def _style(ax, xlabel, ylabel, title):
     for side in ("left", "bottom"):
         ax.spines[side].set_color(GRID)
     ax.tick_params(colors=INK2)
-    ax.axvline(0.0, color=INK2, linewidth=0.8, linestyle="--")
+    if efermi:
+        ax.axvline(0.0, color=INK2, linewidth=0.8, linestyle="--")
+
+
+def contour_bottom(node):
+    """(E - E_F of the bottom of the SCF energy contour, label) for a dos node: -ewidth of the go CalcJob that
+    made the potential (``inputs.potential.creator``), else -ewidth of the node itself.
+
+    AkaiKKR integrates the charge over [E_F - ewidth, E_F] (cemesh.f), so states below this line were not
+    included in the self-consistent charge; the DOS mesh of a dos run instead covers
+    [E_F - ref*ewidth, E_F + (1 - ref)*ewidth] with ref = 0.75 by default (cemesr.f).
+    """
+    go = node.inputs.potential.creator if "potential" in node.inputs else None
+    if go is not None and "results" in go.outputs and "ewidth" in go.outputs.results.keys():
+        return -abs(float(go.outputs.results["ewidth"])), f"$-$ewidth of go (pk {go.pk})"
+    return -abs(float(node.outputs.results["ewidth"])), "$-$ewidth"
+
+
+def _mark_contour_bottom(ax, energy, node):
+    """dashed vertical line at E - E_F = -|ewidth|; the x range is widened if the line is off the DOS mesh."""
+    ebtm, label = contour_bottom(node)
+    ax.axvline(ebtm, color=SERIES[3], linewidth=1.0, linestyle="-.", label=label)
+    lo, hi = float(energy.min()), float(energy.max())
+    if ebtm < lo:
+        ax.set_xlim(ebtm - 0.02 * (hi - ebtm), hi + 0.02 * (hi - ebtm))
 
 
 def plot_dos(node, path, prefix):
@@ -44,7 +68,8 @@ def plot_dos(node, path, prefix):
         ax.plot(energy, dos[0], color=SERIES[0], linewidth=1.6, label="up")
         ax.plot(energy, -dos[1], color=SERIES[1], linewidth=1.6, label="down")
         ax.axhline(0.0, color=INK2, linewidth=0.6)
-        ax.legend(frameon=False)
+    _mark_contour_bottom(ax, energy, node)
+    ax.legend(frameon=False)
     _style(ax, "$E - E_F$ (Ry)", "DOS (states/Ry)", f"{prefix}: total DOS")
     fig.tight_layout()
     fig.savefig(path, dpi=150)
@@ -83,6 +108,7 @@ def plot_pdos(node, path, prefix):
                 ax.plot(energy, -pdos[1, ic, :, il], color=color, linewidth=1.6)
         if nspin > 1:
             ax.axhline(0.0, color=INK2, linewidth=0.6)
+        _mark_contour_bottom(ax, energy, node)
         ax.legend(frameon=False)
         _style(ax, "$E - E_F$ (Ry)", "PDOS (states/Ry)" + (" (up +, down -)" if nspin > 1 else ""),
                f"{prefix}: PDOS {names[ic]}")
@@ -129,13 +155,93 @@ def plot_awk(node, outdir, prefix):
     return written
 
 
-def plot_cli(dos_pk=None, spc_pk=None, outdir=None, prefix=None):
+def _component_shortnames(node):
+    """{type name: [component short name, ...]} from results["type_of_site"] (e.g. Rh, Pt of a CPA type)."""
+    names = {}
+    for t in node.outputs.results["type_of_site"]:
+        short = []
+        for c in t["comp_shortname"]:
+            comp = c[len(t["type"]) + 1:] if c.startswith(t["type"] + "_") else c
+            short.append(comp.split("_")[0] if comp != c else c)  # "Rh_50.0%" -> "Rh"
+        names[t["type"]] = short
+    return names
+
+
+def jij_dataframe(node):
+    """the `Jij` output Dict as a pandas DataFrame (columns as written by pyakaikkr get_jij_as_dataframe)."""
+    import pandas as pd
+
+    if "Jij" not in node.outputs:
+        raise ValueError(f"Node<{node.pk}> has no `Jij` output (is it a jij CalcJob?)")
+    df = pd.DataFrame(node.outputs.Jij.get_dict())
+    for col in ("distance", "J_ij", "J_ij(meV)"):
+        df[col] = df[col].astype(float)
+    return df
+
+
+def plot_jij(node, outdir, prefix, csv=True):
+    """J_ij(R) figures: one PNG per type pair, one panel per (component1, component2) pair.
+
+    Follows the AkaiKKRPythonUtil test script (JijPlotter.make_typepair / make_comppair): R is in units of the
+    lattice constant `a` as printed by AkaiKKR, J_ij in meV, and all panels of a figure share the axes so the
+    component pairs of a CPA type can be compared.  Optionally writes `<prefix>_jij.csv` (the same table).
+    """
+    import math
+
+    plt = _plt()
+    df = jij_dataframe(node)
+    short = _component_shortnames(node)
+    tc = node.outputs.Tc.value if "Tc" in node.outputs else None
+    written = []
+    if csv:
+        path = os.path.join(outdir, f"{prefix}_jij.csv")
+        df.to_csv(path, index=False)
+        written.append(path)
+
+    xpad = 0.05 * (df["distance"].max() - df["distance"].min() or 1.0)
+    xlim = (df["distance"].min() - xpad, df["distance"].max() + xpad)
+    ypad = 0.05 * (df["J_ij(meV)"].max() - df["J_ij(meV)"].min() or 1.0)
+    ylim = (df["J_ij(meV)"].min() - ypad, df["J_ij(meV)"].max() + ypad)
+
+    for (t1, t2), dft in df.groupby(["type1", "type2"], sort=False):
+        pairs = list(dft.groupby(["comp1", "comp2"], sort=False))
+        ncols = min(len(pairs), 3)
+        nrows = math.ceil(len(pairs) / ncols)
+        # sharey only: with sharex the x tick labels vanish on panels whose lower neighbour is hidden
+        fig, axes = plt.subplots(nrows, ncols, figsize=(4.2 * ncols, 3.0 * nrows), squeeze=False, sharey=True)
+        for ax in axes.flat[len(pairs):]:
+            ax.set_visible(False)
+        for ax, ((c1, c2), dfc) in zip(axes.flat, pairs):
+            dfc = dfc.sort_values("distance")
+            ax.plot(dfc["distance"], dfc["J_ij(meV)"], color=SERIES[0], linewidth=1.4, marker="o", markersize=4)
+            ax.axhline(0.0, color=INK2, linewidth=0.8, linestyle="--")
+            n1 = short.get(t1, [])
+            n2 = short.get(t2, [])
+            c1name = n1[int(c1) - 1] if 0 < int(c1) <= len(n1) else f"comp{c1}"
+            c2name = n2[int(c2) - 1] if 0 < int(c2) <= len(n2) else f"comp{c2}"
+            _style(ax, "$R / a$", "$J_{ij}$ (meV)", f"{c1name}-{c2name}", efermi=False)
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+            ax.title.set_fontsize(10)
+        title = f"{prefix}: $J_{{ij}}$ {t1} - {t2}"
+        if tc is not None:
+            title += f"   (Tc = {tc:.1f} K)"
+        fig.suptitle(title, x=0.01, ha="left", color=INK, fontsize=11)
+        fig.tight_layout(rect=(0, 0, 1, 0.95))
+        path = os.path.join(outdir, f"{prefix}_Jij_{t1}-{t2}.png")
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+        written.append(path)
+    return written
+
+
+def plot_cli(dos_pk=None, spc_pk=None, jij_pk=None, outdir=None, prefix=None):
     from aiida import orm
 
-    if not dos_pk and not spc_pk:
-        raise ValueError("give --dos-pk and/or --spc-pk")
+    if not dos_pk and not spc_pk and not jij_pk:
+        raise ValueError("give --dos-pk, --spc-pk and/or --jij-pk")
     written = []
-    first = orm.load_node(int(dos_pk or spc_pk))
+    first = orm.load_node(int(dos_pk or spc_pk or jij_pk))
     outdir = outdir or os.path.join(os.path.expanduser("~"), "aiida_work", "figures", str(first.pk))
     os.makedirs(outdir, exist_ok=True)
     prefix = prefix or (first.label.rsplit("_", 1)[0] if first.label else f"pk{first.pk}")
@@ -151,4 +257,6 @@ def plot_cli(dos_pk=None, spc_pk=None, outdir=None, prefix=None):
         if "klabel" not in node.outputs:
             raise ValueError(f"Node<{node.pk}> has no `klabel` output (is it a spc CalcJob?)")
         written += plot_awk(node, outdir, prefix)
+    if jij_pk:
+        written += plot_jij(orm.load_node(int(jij_pk)), outdir, prefix)
     return {"outdir": outdir, "prefix": prefix, "files": written}

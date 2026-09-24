@@ -157,10 +157,10 @@ def kkr_workdir(pk: int, lines: int | None = None) -> dict:
     return run("workdir", pk=pk, lines=lines)
 
 
-def kkr_plot(dos_pk: int | None = None, spc_pk: int | None = None, outdir: str | None = None,
-             prefix: str | None = None) -> dict:
-    """Write DOS / PDOS / A(w,k) PNG files for a dos and/or a spc CalcJob; returns the file paths."""
-    return run("plot", dos_pk=dos_pk, spc_pk=spc_pk, outdir=outdir, prefix=prefix)
+def kkr_plot(dos_pk: int | None = None, spc_pk: int | None = None, jij_pk: int | None = None,
+             outdir: str | None = None, prefix: str | None = None) -> dict:
+    """Write DOS / PDOS / A(w,k) / J_ij(R) PNG files (and <prefix>_jij.csv) for dos / spc / jij CalcJobs; returns the file paths."""
+    return run("plot", dos_pk=dos_pk, spc_pk=spc_pk, jij_pk=jij_pk, outdir=outdir, prefix=prefix)
 
 
 def kkr_compare_reference(reference_json: str, pks: str | None = None, result_json: str | None = None,

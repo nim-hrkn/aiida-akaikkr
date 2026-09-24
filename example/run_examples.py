@@ -6,7 +6,10 @@ be compared with `tests/akaikkr/reference/*.json` of AkaiKKRPythonUtil.
 
 Usage (inside the `akaikkr` conda env):
 
-    python example/run_examples.py [--code specx-akaikkr@mygardenx2-slurm] [--only Fe,Co] [--ncores 8]
+    python example/run_examples.py [--code specx-akaikkr@mygardenx2-slurm] [--only Fe,Co] [--ncores 8] [--figdir example/figures]
+
+With --figdir, DOS / PDOS / A(w,k) / J_ij figures (and <name>_jij.csv) are written for every finished
+dos / spc / j3.0 CalcJob after the run (same as `example/plot_results.py --dos/--spc/--jij`).
 
 The structure step runs specx locally in "geometry" mode inside a temporary
 directory; the CIF enters the provenance as a SinglefileData node.
@@ -158,6 +161,7 @@ def main():
     ap.add_argument("--structure-dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "structure"))
     ap.add_argument("--displc", action="store_true", help="add displc (akaikkr_cnd); also runs cnd for CND_MATERIALS")
     ap.add_argument("--result", default="run_examples_result.json")
+    ap.add_argument("--figdir", default=None, help="write figures of the finished dos/spc/j3.0 jobs here")
     args = ap.parse_args()
     names = [n for n in args.only.split(",") if n] or list(MATERIALS)
 
@@ -219,6 +223,18 @@ def main():
     print("\nSUMMARY", flush=True)
     for label, d in result.items():
         print(f"{label:24s} pk={d['pk']:<5d} exit={d['exit']}  te={d.get('te')}  moment={d.get('moment')}  Tc={d.get('Tc', '')}  resis={d.get('resis', '')}", flush=True)
+
+    if args.figdir:
+        from aiida_akaikkr.plot import plot_cli
+
+        for name in names:
+            pks = {m: nodes[f"{name}_{m}"].pk for m in ("dos", "spc", "j3.0")
+                   if f"{name}_{m}" in nodes and nodes[f"{name}_{m}"].exit_status == 0}
+            if not pks:
+                continue
+            for path in plot_cli(dos_pk=pks.get("dos"), spc_pk=pks.get("spc"), jij_pk=pks.get("j3.0"),
+                                 outdir=args.figdir, prefix=name)["files"]:
+                print("wrote", path, flush=True)
 
 
 if __name__ == "__main__":
