@@ -82,6 +82,31 @@ exec ssh -o BatchMode=yes mygardenx2 /home/kino/miniforge3/envs/akaikkr/bin/akai
 4. `kkr_wait(pk)` を数回、または `kkr_process(pk)`。`children` に go と後続の pk と状態が出る。
 5. `kkr_results(pk)` で全エネルギー・モーメント・Tc、`kkr_plot(dos_pk, spc_pk)` で図、`kkr_compare_reference(pks="<pk>", reference_json=...)` で参照との比較、`kkr_provenance(pk)` でグラフ。
 
+## 4a. 実行例: Claude Code から Cu を流す（2026-09-24）
+
+Claude Code に登録した `akaikkr-mcp`（`--allow-submit`、control 旗なし）から、Cu の go → dos → spc31 を流した記録です。所要は投入から完走まで約 90 秒（SLURM の `debug` パーティション）。
+
+| 順 | ツール | 主な引数 | 返り |
+|---|---|---|---|
+| 1 | `kkr_presets` | なし | `Cu`: cif `Cu-Fm3m.cif`、modes `dos, spc` |
+| 2 | `kkr_codes` | なし | `specx-akaikkr@mygardenx2-slurm`（pk 8、prepend あり） |
+| 3 | `kkr_submit_chain` | `preset="Cu"`, `code="specx-akaikkr@mygardenx2-slurm"`, `modes="dos,spc"`, `label="Cu via MCP"` | WorkChain pk 2875、common pk 2866 |
+| 4 | `kkr_wait` | `pk=2875`, `wait_seconds=45` | 1 回目 `terminated: false, state: waiting`、2 回目 `terminated: true, exit_status: 0` |
+| 5 | `kkr_results` | `pk=2875` | 下表 |
+| 6 | `kkr_process` | `pk=2875` | `children` に split_param ×3 と go/dos/spc、`report_tail` に submitted go <2888> / dos <2905> / spc <2918> |
+
+`kkr_results` の要点:
+
+| mode | pk | exit | total_energy (Ry) | converged | 出力 |
+|---|---|---|---|---|---|
+| go | 2888 | 0 | -3304.747105277 | true | potential, results, structure |
+| dos | 2905 | 0 | -3303.610531279 | false | dos, pdos |
+| spc31 | 2918 | 0 | -3304.522140227 | false | Awk_up, klabel |
+
+- go の全エネルギーは `tests/akaikkr/reference/ifort.json` の `Cu_go` と一致します（Fermi 準位 0.6018404 Ry、モーメント 0）。
+- dos / spc の `converged: false` は正常です。go のポテンシャルからの one-shot 計算で SCF を回さないため、全エネルギーも意味を持ちません。
+- `kkr_wait` は最長 45 s しか待たないので、終わるまで繰り返し呼びます。`terminated: true` になるまで `kkr_results` は呼ばないでください（途中の mode が欠けます）。
+
 ## 5. 失敗の見方
 
 - `exit_status 321`（pot.dat が無い）: `kkr_process` の `stdout_head` に specx の先頭出力が入ります。"illegal input" なら inputcard が拒否されています（akaikkr_cnd で displc 無し、など）。
