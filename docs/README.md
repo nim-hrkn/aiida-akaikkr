@@ -8,6 +8,7 @@ AkaiKKR（specx）を AiiDA から実行するプラグインの説明です。2
 | [calcjobs.md](calcjobs.md) | CalcJob（go / fsm / dos / jij / tc / spc / cnd）の入力・出力・exit code、パーサーの挙動と制限 |
 | [examples.md](examples.md) | `example/` のスクリプト（単発実行、テストセット一括実行、図の出力、参照値との比較、provenance graph） |
 | [known_issues.md](known_issues.md) | 既知の問題と参照値との差 |
+| [mcp_design.md](mcp_design.md) | MCP サーバの設計（v0.3.0 案、未実装）。ツール一覧、約束、CLI、WorkChain、配線、テスト |
 
 ## 最小の流れ
 
