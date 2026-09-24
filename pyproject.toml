@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiida-akaikkr"
-version = "0.2.0"
+version = "0.3.0"
 description = "AiiDA plugin for AkaiKKR (specx)"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -30,6 +30,18 @@ dependencies = [
 
 [project.entry-points."aiida.parsers"]
 "akaikkr.parser" = "aiida_akaikkr.parsers.akaikkr_parser:specx_parser"
+
+[project.entry-points."aiida.workflows"]
+"akaikkr.chain" = "aiida_akaikkr.workflows.chain:AkaikkrChainWorkChain"
+
+[project.optional-dependencies]
+mcp = ["mcp>=2.0"]
+plot = ["matplotlib"]
+test = ["pytest"]
+
+[project.scripts]
+akaikkr-aiida = "aiida_akaikkr.cli.main:main"
+akaikkr-mcp = "aiida_akaikkr.mcp.server:main"
 
 [tool.setuptools.packages.find]
 include = ["aiida_akaikkr*"]

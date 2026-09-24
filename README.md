@@ -78,6 +78,20 @@ Ready-made scripts in `example/`:
 - `compare_reference.py` – compare a result JSON with `tests/*/reference/ifort.json`.
 - `plot_results.py` – DOS / PDOS / A(w,k) figures from finished nodes (`example/figures/`).
 
+## Command line and MCP
+
+`akaikkr-aiida` (CLI, `--json` for machine-readable output) and `akaikkr-mcp` (an MCP server that exposes the
+same subcommands as `kkr_*` tools to Claude) are installed with `pip install -e ".[mcp,plot]"`.
+
+```bash
+akaikkr-aiida presets
+akaikkr-aiida submit-chain --preset Fe --code specx-akaikkr@mygardenx2-slurm   # go -> fsm, tc, j3.0, dos, spc31 as one WorkChain
+akaikkr-aiida results --pk <workchain pk>
+akaikkr-mcp --allow-submit          # read-only tools are always on; submit/control tools need flags
+```
+
+See `docs/mcp.md` for the tool list, wiring into Claude Code / Claude Desktop and how to read failures.
+
 ## Documentation
 
 `docs/README.md` (Japanese) links to:
@@ -86,6 +100,7 @@ Ready-made scripts in `example/`:
 - `docs/calcjobs.md` – ports, parser outputs, exit codes, k-path generation, changes since the 2022 version.
 - `docs/examples.md` – the example scripts and provenance graphs.
 - `docs/known_issues.md` – reference comparison, parser limits, harmless warnings.
+- `docs/mcp.md`, `docs/mcp_design.md` – CLI / MCP usage and design.
 
 ## Notes
 

@@ -1,6 +1,6 @@
-# aiida-akaikkr MCP 設計（v0.3.0 案、2026-09-24）
+# aiida-akaikkr MCP 設計（v0.3.0、2026-09-24）
 
-Claude（Desktop / Code）から AkaiKKR の計算を AiiDA 経由で投入し、状態と結果を読み、図と provenance を出すための MCP サーバの設計です。aiida-shotgun-csp の MCP（`mcp/server.py` → CLI を subprocess で呼ぶ）と同じ約束で作ります。設計のみで、実装はまだありません。
+Claude（Desktop / Code）から AkaiKKR の計算を AiiDA 経由で投入し、状態と結果を読み、図と provenance を出すための MCP サーバの設計です。aiida-shotgun-csp の MCP（`mcp/server.py` → CLI を subprocess で呼ぶ）と同じ約束で作ります。実装済み（同日）。使い方は [mcp.md](mcp.md)。実装で設計から変えた点は末尾 §11。
 
 ## 0. 目的と範囲
 
@@ -143,3 +143,13 @@ run_examples.py の「go を待ってから後続を出す」を WorkChain に�
 - 図の出力先の既定（提案: `~/aiida_work/figures/<pk>/`）。
 - ASE calculator 経路（`pyakaikkr.ase.AkaiKKR`）を MCP に載せるか。AiiDA を通さないので provenance が無く、今回は載せない。
 - gofmg の対応（fmg の CalcJob が要る）。
+
+## 11. 実装メモ（2026-09-24）
+
+- mcp 2.x では `FastMCP` が `mcp.server.mcpserver.MCPServer` になった。`server.add_tool(fn, name, description)` と `server.run("stdio")` を使う。
+- `kkr_gotocomputer` は `kkr_workdir` に改名（サブコマンド `workdir`）。`kkr_submit_preset` は `kkr_submit_chain(preset=...)` に統合。`kkr_compare_reference` に `material`（ラベル無し・chain のジョブを `<material>_<mode>` に読み替える）を追加。
+- ツール関数は明示的に 23 本書き、`TOOLS`（ツール名 → サブコマンド）で spec と結び付ける。テストが「全ツールの引数集合 == spec のオプション集合」と「全引数が argv に出る」を検査する。
+- CLI は起動時に自分の env の bin を PATH の先頭に足す。MCP ホスト（Claude Desktop など）の PATH には `verdi` と `dot` が無いため。
+- AiiDA のリンクマネージャ（`node.inputs` / `node.outputs`）は dict の API（`items`, `keys`, `get`）を持たず属性アクセスと解釈される。`query.nodes.input_nodes / output_nodes` で辞書にしてから使う。
+- 行動の記録は `~/.aiida-akaikkr/log/action-<YYYY-MM>.jsonl`。`--caller`（cli / mcp）は CLI の隠しオプションで MCP が渡す。
+- 実行確認: 読み取り 16 / submit 付き 20 / control 付き 23 ツールを stdio クライアントから列挙・呼び出し。Cu の `submit-chain`（go → dos, spc）が WorkChain として完走。

@@ -1,6 +1,6 @@
 # aiida-akaikkr ドキュメント
 
-AkaiKKR（specx）を AiiDA から実行するプラグインの説明です。2026-09-24 時点の実装（v0.2.0、AiiDA 2.9.2）に基づきます。
+AkaiKKR（specx）を AiiDA から実行するプラグインの説明です。2026-09-24 時点の実装（v0.3.0、AiiDA 2.9.2）に基づきます。
 
 | 文書 | 内容 |
 |---|---|
@@ -8,7 +8,8 @@ AkaiKKR（specx）を AiiDA から実行するプラグインの説明です。2
 | [calcjobs.md](calcjobs.md) | CalcJob（go / fsm / dos / jij / tc / spc / cnd）の入力・出力・exit code、パーサーの挙動と制限 |
 | [examples.md](examples.md) | `example/` のスクリプト（単発実行、テストセット一括実行、図の出力、参照値との比較、provenance graph） |
 | [known_issues.md](known_issues.md) | 既知の問題と参照値との差 |
-| [mcp_design.md](mcp_design.md) | MCP サーバの設計（v0.3.0 案、未実装）。ツール一覧、約束、CLI、WorkChain、配線、テスト |
+| [mcp.md](mcp.md) | CLI `akaikkr-aiida` と MCP サーバ `akaikkr-mcp` の使い方（v0.3.0）。配線、典型的な流れ、失敗の見方 |
+| [mcp_design.md](mcp_design.md) | MCP サーバの設計。ツール一覧、約束、CLI、WorkChain、テスト層 |
 
 ## 最小の流れ
 
