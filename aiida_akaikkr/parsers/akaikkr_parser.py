@@ -7,10 +7,11 @@ from aiida.common import exceptions
 from aiida.engine import ExitCode
 from aiida.parsers.parser import Parser
 from aiida.plugins import CalculationFactory
-from aiida.orm import Dict, Float
+from aiida.orm import Dict, Float, List
 import aiida
 
 from pyakaikkr import AkaikkrJob
+from pyakaikkr.Error import KKRValueAquisitionError
 from aiida.plugins import DataFactory
 
 import numpy as np
@@ -18,10 +19,10 @@ import numpy as np
 
 aiida_major_version = int(aiida.__version__.split(".")[0])
 
-SinglefileData = DataFactory('singlefile')
-ArrayData = DataFactory('array')
-FolderData = DataFactory('folder')
-StructureData = DataFactory('structure')
+SinglefileData = DataFactory('core.singlefile')
+ArrayData = DataFactory('core.array')
+FolderData = DataFactory('core.folder')
+StructureData = DataFactory('core.structure')
 
 
 def get_basic_properties(output_card: (str, list), get_history: bool = True):
@@ -110,7 +111,7 @@ class specx_parser(Parser):
         elif aiida_major_version == 1:
             output_folder = self.retrieved
         else:
-            raise ValueError("unknown aiida major verson. aiida version={aiida.__version__}")
+            raise ValueError(f"unknown aiida major version. aiida version={aiida.__version__}")
 
         files_retrieved = output_folder.list_object_names()
 
@@ -127,22 +128,18 @@ class specx_parser(Parser):
             if potential_filename not in files_retrieved:
                 return self.exit_codes.ERROR_OUTPUT_POTENTIAL_MISSING
 
-        if "spc" in self.node.inputs.go.value:
-            if self.node.inputs.magtype == "nmag":
-                _potential_file = f'{potential_filename}_up.spc'
-                if _potential_file not in files_retrieved:
-                    return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
-            else:
-                _potential_file = f'{potential_filename}_up.spc'
-                if _potential_file not in files_retrieved:
-                    return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
-                _potential_file = f'{potential_filename}_up.spc'
+        magtype = self.node.inputs.magtype.value
+        go = self.node.inputs.go.value.strip()  # " cnd" carries a leading space
+        if "spc" in go:
+            spc_postfixes = ["up"] if magtype == "nmag" else ["up", "dn"]
+            for postfix in spc_postfixes:
+                _potential_file = f'{potential_filename}_{postfix}.spc'
                 if _potential_file not in files_retrieved:
                     return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
 
             klabel_files_expected = 'klabel.json'
             if klabel_files_expected not in files_retrieved:
-                return self.exit_codes.ERROR_OUTPUT_SPC_MISSING
+                return self.exit_codes.ERROR_OUTPUT_KLABEL_MISSING
 
         # add a potential file
         if self.node.inputs.retrieve_potential.value:
@@ -159,27 +156,27 @@ class specx_parser(Parser):
             return self.exit_codes.ERROR_OUTPUT_STDOUT_PARSE
         self.out("results", Dict(dict=output_node))
 
-        if self.node.inputs.magtype != "lmd":
+        if magtype != "lmd":
             with output_folder.open(output_filename, "r") as handle:
-
                 job = AkaikkrJob("dummy_directory")
                 py_structure = job.make_pymatgenstructure(handle, change_atom_name=False)
-
-                from pymatgen.io.ase import AseAtomsAdaptor
-                aseadaptor = AseAtomsAdaptor()
-                try:
-                    ase_structure = aseadaptor.get_atoms(py_structure)
-                except ValueError:
-                    self.logger.error('failed to convert pymatgen.Structure to ase.Atoms')
-                    # ASE.Atoms don't accept the occupancies of lmd. It has anclr=[26,26], occup=[50,50]. anclr can't be the same Z in ase.Atoms.
-                    # It can't happens because go!=lmd.
-                    return self.exit_codes.ERROR_UNEXPECTED_PARSER_EXCEPTION
-
-                structuredata = StructureData(ase=ase_structure)
+            # StructureData(pymatgen=...) keeps partial occupancies (CPA) as kinds with weights,
+            # which the ASE route cannot represent.  Empty spheres (Z=0, written as Og by
+            # pyakaikkr) are not an element AiiDA knows, so they are dropped here.
+            empty = [i for i, site in enumerate(py_structure)
+                     if len(site.species) == 0 or "Og" in site.species_string]
+            if empty:
+                self.logger.warning(f'{len(empty)} empty-sphere (Og) sites removed from the structure output')
+                py_structure = py_structure.copy()
+                py_structure.remove_sites(empty)
+            try:
+                structuredata = StructureData(pymatgen=py_structure)
+            except Exception as exc:  # pylint: disable=broad-except
+                self.logger.warning(f'structure output skipped: {exc}')
+            else:
                 self.out('structure', structuredata)
 
-        if self.node.inputs.go.value == 'dos':
-            from pyakaikkr.Error import KKRValueAquisitionError
+        if go == 'dos':
             with output_folder.open(output_filename, "r") as handle:
                 job = AkaikkrJob("dummy_directory")
                 try:
@@ -201,12 +198,20 @@ class specx_parser(Parser):
                     return self.exit_codes.ERROR_OUTPUT_PDOS_PARSE
                 pdosarray = ArrayData()
                 energy = np.array(energy)
-                dos = np.array(dos)
+                # dos is [spin][type][energy][l]; the number of l depends on the type (mxl),
+                # so pad with NaN to the largest l and record the number of l per type.
+                nl_per_type = [len(dos[0][it][0]) for it in range(len(dos[0]))]
+                nl_max = max(nl_per_type)
+                padded = np.full((len(dos), len(dos[0]), len(energy), nl_max), np.nan)
+                for ispin, per_type in enumerate(dos):
+                    for it, per_energy in enumerate(per_type):
+                        padded[ispin, it, :, :nl_per_type[it]] = np.array(per_energy)
                 pdosarray.set_array('energy', energy)
-                pdosarray.set_array('pdos', dos)
+                pdosarray.set_array('pdos', padded)
+                pdosarray.set_array('nl_per_type', np.array(nl_per_type))
                 self.out('pdos', pdosarray)
 
-        if self.node.inputs.go.value[:1] == 'j':
+        if go[:1] == 'j':
             with output_folder.open(output_filename, "r") as handle:
                 job = AkaikkrJob("dummy_directory")
                 try:
@@ -219,16 +224,28 @@ class specx_parser(Parser):
                     jijarray[name] = value.tolist()
                 self.out('Jij', jijarray)
 
-        if self.node.inputs.go.value[:1] == 'j' or self.node.inputs.go.value == 'tc':
+        if go[:1] == 'j' or go == 'tc':
             with output_folder.open(output_filename, "r") as handle:
+                job = AkaikkrJob("dummy_directory")
                 try:
                     tc = job.get_curie_temperature(handle)
                 except KKRValueAquisitionError:
                     return self.exit_codes.ERROR_OUTPUT_CURIE_TEMPERATURE_PARSE
                 self.out('Tc', Float(tc))
 
-        if self.node.inputs.go.value[:3] == 'spc':
-            if self.node.inputs.magtype.value == "nmag":
+        if go == 'cnd':
+            with output_folder.open(output_filename, "r") as handle:
+                job = AkaikkrJob("dummy_directory")
+                try:
+                    resistivity = job.get_resistivity(handle)
+                    conductivity = job.get_conductivity(handle)
+                except KKRValueAquisitionError:
+                    return self.exit_codes.ERROR_OUTPUT_CND_PARSE
+                self.out('resistivity', Float(resistivity))
+                self.out('conductivity', List(list=conductivity))
+
+        if go[:3] == 'spc':
+            if magtype == "nmag":
                 port_list = ["Awk_up"]
                 postfix_list = ["up.spc"]
             else:

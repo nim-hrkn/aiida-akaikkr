@@ -5,21 +5,21 @@ Register calculations via the "aiida.calculations" entry point in setup.json.
 """
 from aiida.common import datastructures
 from aiida.engine import CalcJob
-from aiida.orm import Str, Dict, Bool, Int, Float
+from aiida.orm import Str, Dict, Bool, Int, Float, List
 from aiida.plugins import DataFactory
 from aiida.common.exceptions import InputValidationError
 
-from pyakaikkr import AkaikkrJob
+from pyakaikkr import AkaikkrJob, make_displc_list
 from pyakaikkr.HighsymmetryKpath import HighSymKPath
 
 # from aiida.plugins import DataFactory
 import os
 
-SinglefileData = DataFactory('singlefile')
-ArrayData = DataFactory('array')
-FolderData = DataFactory('folder')
-StructureData = DataFactory('structure')
-RemoteData = DataFactory('remote')
+SinglefileData = DataFactory('core.singlefile')
+ArrayData = DataFactory('core.array')
+FolderData = DataFactory('core.folder')
+StructureData = DataFactory('core.structure')
+RemoteData = DataFactory('core.remote')
 
 
 def _copy_potential(calcinfo, potential, potential_filename):
@@ -33,13 +33,20 @@ def _copy_potential(calcinfo, potential, potential_filename):
     elif isinstance(potential, RemoteData):
         remote_potential_folder = potential
     else:
-        raise InputValidationError('unknown potential type. type={type(potential)}')
+        raise InputValidationError(f'unknown potential type. type={type(potential)}')
 
     if local_potential is not None:
         calcinfo.local_copy_list = [(local_potential.uuid, local_potential.filename, potential_filename)]
     if remote_potential_folder is not None:
         remote_potential_path = os.path.join(remote_potential_folder.get_remote_path(), potential_filename)
         calcinfo.remote_copy_list = [(remote_potential_folder.computer.uuid, remote_potential_path, ".")]
+
+
+def _add_displc(kkr_param, displc):
+    """add the displc parameter (required by akaikkr_cnd) when requested and not given explicitly."""
+    if displc and "displc" not in kkr_param:
+        kkr_param["displc"] = make_displc_list(kkr_param["anclr"])
+    return kkr_param
 
 
 class specx_basic(CalcJob):
@@ -120,6 +127,8 @@ class specx_basic(CalcJob):
                        message='The stdout output file could not be parsed for Jij.')
         spec.exit_code(327, 'ERROR_OUTPUT_CURIE_TEMPERATURE_PARSE',
                        message='The stdout output file could not be parsed for Curie temperature.')
+        spec.exit_code(328, 'ERROR_OUTPUT_CND_PARSE',
+                       message='The stdout output file could not be parsed for resistivity/conductivity.')
 
         # general parse
 
@@ -139,6 +148,7 @@ class specx_basic(CalcJob):
         kkr_param.update(self.inputs.structure.get_dict())
         kkr_param["magtyp"] = self.inputs.magtype.value
         kkr_param["go"] = self.inputs.go.value
+        _add_displc(kkr_param, self.inputs.displc.value)
         # make stdin file
         directory = "dummy"
         job = AkaikkrJob(directory)
@@ -203,6 +213,7 @@ class specx_go(specx_basic):
         kkr_param.update(self.inputs.structure.get_dict())
         kkr_param["magtyp"] = self.inputs.magtype.value
         kkr_param["go"] = self.inputs.go.value
+        _add_displc(kkr_param, self.inputs.displc.value)
         # make stdin file
         directory = "dummy"
         job = AkaikkrJob(directory)
@@ -269,7 +280,9 @@ class specx_fsm(specx_basic):
         codeinfo = datastructures.CodeInfo()
         kkr_param = self.inputs.parameters.get_dict()
         kkr_param.update(self.inputs.structure.get_dict())
+        kkr_param["magtyp"] = self.inputs.magtype.value
         kkr_param["go"] = self.inputs.go.value
+        _add_displc(kkr_param, self.inputs.displc.value)
         kkr_param["fspin"] = self.inputs.fspin.value
         # make stdin file
         directory = "dummy"
@@ -317,7 +330,7 @@ class specx_dos(specx_basic):
 
         # set default values for AiiDA options
         spec.expose_inputs(specx_basic)
-        spec.input("go", valid_type=Str, help="kkr go parameter", default=lambda: cls._GO)
+        spec.input("go", valid_type=Str, help="kkr go parameter", default=lambda: Str(cls._GO))
         spec.input("retrieve_potential", valid_type=Bool, default=lambda: Bool(cls._RETRIEVE_POTENTIAL),
                    help="retrieve potential file or not.")
         spec.expose_outputs(specx_basic)
@@ -378,6 +391,29 @@ class specx_tc(specx_basic):
         spec.output("Tc", valid_type=Float, help="Tc from the k space J_ij model.")
 
 
+class specx_cnd(specx_basic):
+    """
+    akaikkr cnd (conductivity, akaikkr_cnd only).
+
+    """
+
+    _RETRIEVE_POTENTIAL = False
+    _GO = ' cnd'  # the leading space is required by specx
+
+    @classmethod
+    def define(cls, spec):
+        """Define inputs and outputs of the calculation."""
+        super().define(spec)
+
+        spec.expose_inputs(specx_basic)
+        spec.input("go", valid_type=Str, help="kkr go parameter", default=lambda: Str(cls._GO))
+        spec.input("retrieve_potential", valid_type=Bool, default=lambda: Bool(cls._RETRIEVE_POTENTIAL),
+                   help="retrieve potential file or not.")
+        spec.expose_outputs(specx_basic)
+        spec.output("resistivity", valid_type=Float, help="resistivity (micro ohm cm).")
+        spec.output("conductivity", valid_type=List, help="conductivity per spin.")
+
+
 class specx_spc(specx_basic):
     """
     akaikkr spc.
@@ -424,6 +460,7 @@ class specx_spc(specx_basic):
         kkr_param.update(self.inputs.structure.get_dict())
         kkr_param["magtyp"] = self.inputs.magtype.value
         kkr_param["go"] = self.inputs.go.value
+        _add_displc(kkr_param, self.inputs.displc.value)
 
         # kpath file must be made.
         klabel_filename = self._KLABEL_FILENAME
