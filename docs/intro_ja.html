@@ -11313,15 +11313,15 @@ L 108 36
 <p>Claude はこの 1 文を次の 4 段に分けて実行します（2026-09-26 に実際に行った例。pk はそのときの値）。</p>
 <table><tr><th>段</th><th>Claude が呼ぶツール</th><th>返るもの</th></tr>
 <tr><td>1. CIF を読む</td><td><code>kkr_structure_from_cif(cif_path="structure/SmCo5_P6mmm.cif", code="specx-akaikkr@mygardenx2-slurm", magtype="mag")</code></td><td>構造の Dict pk 3792（P6/mmm、6 原子、type Sm_1a_0 / Co_3g_1 / Co_2c_4）</td></tr>
-<tr><td>2. ewidth を決める</td><td><code>kkr_submit_gaes(structure_pk=3792, code=..., ncores=12)</code> → <code>kkr_wait(pk)</code> を繰り返す</td><td>GAES WorkChain pk 3799: 実行中（この節は計算が終わり次第、結果で更新する）</td></tr>
-<tr><td>3. J<sub>ij</sub> を計算</td><td><code>kkr_submit_followup(go_pk=（GAES の最後の go）, mode="jij")</code> → <code>kkr_wait</code></td><td>jij CalcJob pk （未投入）: 実行中</td></tr>
-<tr><td>4. レポート</td><td><code>kkr_report(pk=3799, jij_pk=（未投入）, lang="ja")</code></td><td><a href="data/report_SmCo5_gaes_ja.html">HTML レポート</a>（式、空間群、SCF、成分表、DOS、J<sub>ij</sub>、GAES の図）</td></tr></table>
+<tr><td>2. ewidth を決める</td><td><code>kkr_submit_gaes(structure_pk=3792, code=..., ncores=12)</code> → <code>kkr_wait(pk)</code> を繰り返す</td><td>GAES WorkChain pk 3799: finished、ewidth 1.0（1.2 → 1.0。Sm 5p 帯の上のギャップ [−1.12, −0.82] Ry、6 原子胞を原子あたりで判定、両方の go とも SCF 収束）。最後の go は pk 3848</td></tr>
+<tr><td>3. J<sub>ij</sub> を計算</td><td><code>kkr_submit_followup(go_pk=3848, mode="jij")</code> → <code>kkr_wait</code></td><td>jij CalcJob pk 3887: finished、平均場のキュリー温度 1102 K、全モーメント 6.83 μB、全エネルギー −34750.117 Ry</td></tr>
+<tr><td>4. レポート</td><td><code>kkr_report(pk=3799, jij_pk=3887, lang="ja")</code></td><td><a href="data/report_SmCo5_gaes_ja.html">HTML レポート</a>（式、空間群、SCF、成分表、DOS、J<sub>ij</sub>、GAES の図）</td></tr></table>
 <p>人が書いたのは最初の 1 文だけです。CLI で同じことをすると次の 4 コマンドになります。</p>
 
 <pre><code>akaikkr-aiida structure --cif-path structure/SmCo5_P6mmm.cif --code specx-akaikkr@mygardenx2-slurm --magtype mag   # -&gt; pk 3792
 akaikkr-aiida submit-gaes --structure-pk 3792 --code specx-akaikkr@mygardenx2-slurm --ncores 12            # -&gt; pk 3799
-akaikkr-aiida submit-followup --go-pk （GAES の最後の go） --mode jij                                                             # -&gt; pk （未投入）
-akaikkr-aiida report --pk 3799 --jij-pk （未投入） --lang ja</code></pre>
+akaikkr-aiida submit-followup --go-pk 3848 --mode jij                                                             # -&gt; pk 3887
+akaikkr-aiida report --pk 3799 --jij-pk 3887 --lang ja</code></pre>
 <table><tr><th>他の言い方</th><th>Claude が呼ぶもの</th></tr>
 <tr><td>「Cu の DOS とバンド分散を計算して」</td><td><code>kkr_submit_chain(preset="Cu", modes="dos,spc")</code></td></tr>
 <tr><td>「今走っている計算は？」</td><td><code>kkr_list()</code>、<code>kkr_process(pk)</code></td></tr>

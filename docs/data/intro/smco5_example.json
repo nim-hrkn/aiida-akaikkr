@@ -1,8 +1,8 @@
 {
  "STRUCTURE_PK": 3792,
  "GAES_PK": 3799,
- "GAES_RESULT": "実行中（この節は計算が終わり次第、結果で更新する）",
- "GO_PK": "（GAES の最後の go）",
- "JIJ_PK": "（未投入）",
- "JIJ_RESULT": "実行中"
+ "GAES_RESULT": "finished、ewidth 1.0（1.2 → 1.0。Sm 5p 帯の上のギャップ [−1.12, −0.82] Ry、6 原子胞を原子あたりで判定、両方の go とも SCF 収束）。最後の go は pk 3848",
+ "GO_PK": 3848,
+ "JIJ_PK": 3887,
+ "JIJ_RESULT": "finished、平均場のキュリー温度 1102 K、全モーメント 6.83 μB、全エネルギー −34750.117 Ry"
 }
