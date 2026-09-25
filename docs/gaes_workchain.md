@@ -63,3 +63,4 @@ AkaiKKRPythonUtil/docs/ewidth_tuning_scheme.md §15 と同じ規則。`Rb4p=vale
 - 判定用 dos の窓は 4.5 Ry まで。それより広い窓の DOS は −3 Ry 以深で信用できない。
 - 図の線は go の ewidth（`aiida_akaikkr.plot.contour_bottom`）。dos の ewidth ではない。
 - 範囲を外れた ewidth は `old` にならない（2026-09-25 修正。それ以前はギャップに入っていれば範囲に関係なく `old` だった）。
+- 図（`plot --gaes-pk` を含む `plot.py` の全部）は pyakaikkr の配列ベースの描画関数 `pyakaikkr.plot`（`plot_dos`, `plot_pdos`, `plot_awk`, `plot_jij`, `plot_gaes_dos`）に ArrayData / Dict の配列を渡して描く（2026-09-26）。配色は `plot.STYLE`。

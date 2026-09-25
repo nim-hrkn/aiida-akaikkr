@@ -1,4 +1,10 @@
-"""DOS / PDOS / A(w,k) / J_ij figures from finished aiida-akaikkr nodes (matplotlib imported lazily)."""
+"""DOS / PDOS / A(w,k) / J_ij / GAES figures from finished aiida-akaikkr nodes.
+
+The drawing itself is done by ``pyakaikkr.plot`` (the array-based "plot function A" shared with
+pyakaikkr's own plotters): this module only takes the arrays of the ArrayData / Dict outputs of a
+node, adds the node-specific context (ewidth of the go that made the potential, component names,
+GAES history) and passes them on with the aiida-akaikkr palette. matplotlib is imported lazily.
+"""
 import os
 
 # fixed categorical order (never cycled): blue, orange, aqua, yellow
@@ -7,6 +13,11 @@ INK = "#0b0b0b"
 INK2 = "#52514e"
 GRID = "#d9d8d3"
 L_NAMES = ["s", "p", "d", "f"]
+
+# palette handed to pyakaikkr.plot (keys of pyakaikkr.plot.DEFAULT_STYLE)
+STYLE = {"series": SERIES, "ink": INK, "ink2": INK2, "grid": GRID, "ewidth": SERIES[3], "final": SERIES[1],
+         "coarse": SERIES[2], "fine": SERIES[0], "bounds": INK2, "level": INK2, "level_other": INK2,
+         "linewidth": 1.2, "fill_alpha": 0.12, "coarse_alpha": 0.12, "fine_alpha": 0.18}
 
 
 def _plt():
@@ -18,18 +29,18 @@ def _plt():
     return plt
 
 
+def _pk():
+    from pyakaikkr import plot as pk_plot
+
+    return pk_plot
+
+
 def _style(ax, xlabel, ylabel, title, efermi=True):
-    ax.set_xlabel(xlabel, color=INK)
-    ax.set_ylabel(ylabel, color=INK)
-    ax.set_title(title, loc="left", color=INK, fontsize=11)
-    ax.grid(True, color=GRID, linewidth=0.6)
-    for side in ("top", "right"):
-        ax.spines[side].set_visible(False)
-    for side in ("left", "bottom"):
-        ax.spines[side].set_color(GRID)
-    ax.tick_params(colors=INK2)
+    """axes decoration in the aiida-akaikkr look (pyakaikkr.plot.style_axes + E_F line)."""
+    pk = _pk()
+    pk.style_axes(ax, xlabel, ylabel, title, style=STYLE)
     if efermi:
-        ax.axvline(0.0, color=INK2, linewidth=0.8, linestyle="--")
+        pk.mark_efermi(ax, STYLE)
 
 
 def contour_bottom(node):
@@ -47,28 +58,19 @@ def contour_bottom(node):
 
 
 def _mark_contour_bottom(ax, energy, node):
-    """dashed vertical line at E - E_F = -|ewidth|; the x range is widened if the line is off the DOS mesh."""
+    """dash-dot vertical line at E - E_F = -|ewidth_go| (pyakaikkr.plot.mark_ewidth_go)."""
     ebtm, label = contour_bottom(node)
-    ax.axvline(ebtm, color=SERIES[3], linewidth=1.0, linestyle="-.", label=label)
-    lo, hi = float(energy.min()), float(energy.max())
-    if ebtm < lo:
-        ax.set_xlim(ebtm - 0.02 * (hi - ebtm), hi + 0.02 * (hi - ebtm))
+    _pk().mark_ewidth_go(ax, energy, -ebtm, STYLE, label=label)
 
 
 def plot_dos(node, path, prefix):
     plt = _plt()
     energy = node.outputs.dos.get_array("energy")
     dos = node.outputs.dos.get_array("dos")  # (nspin, nenergy)
-    nspin = dos.shape[0]
+    ebtm, label = contour_bottom(node)
     fig, ax = plt.subplots(figsize=(7, 4))
-    if nspin == 1:
-        ax.plot(energy, dos[0], color=SERIES[0], linewidth=1.6)
-        ax.fill_between(energy, dos[0], color=SERIES[0], alpha=0.12, linewidth=0)
-    else:
-        ax.plot(energy, dos[0], color=SERIES[0], linewidth=1.6, label="up")
-        ax.plot(energy, -dos[1], color=SERIES[1], linewidth=1.6, label="down")
-        ax.axhline(0.0, color=INK2, linewidth=0.6)
-    _mark_contour_bottom(ax, energy, node)
+    _pk().plot_dos(ax, energy, dos, ewidth_go=-ebtm, ewidth_label=label, style=STYLE, mirror_down=True,
+                   fill=dos.shape[0] == 1, efermi=False)
     ax.legend(frameon=False)
     _style(ax, "$E - E_F$ (Ry)", "DOS (states/Ry)", f"{prefix}: total DOS")
     fig.tight_layout()
@@ -78,37 +80,22 @@ def plot_dos(node, path, prefix):
 
 
 def _component_names(node):
-    names = []
-    for t in node.outputs.results["type_of_site"]:
-        for c in t["comp_shortname"]:
-            comp = c[len(t["type"]) + 1:] if c.startswith(t["type"] + "_") else c
-            names.append(f'{comp.replace("_", " ")} in {t["type"]}' if comp != c else c)
-    return names
+    return _pk().component_names(node.outputs.results["type_of_site"])
 
 
 def plot_pdos(node, path, prefix):
-    import numpy as np
-
     plt = _plt()
     energy = node.outputs.pdos.get_array("energy")
     pdos = node.outputs.pdos.get_array("pdos")  # (nspin, ncomponent, nenergy, nl)
-    nspin, ncomp, _, nl = pdos.shape
+    nspin, ncomp, _, _nl = pdos.shape
     names = _component_names(node)
     if len(names) != ncomp:
         names = [f"component {i}" for i in range(ncomp)]
+    ebtm, label = contour_bottom(node)
     fig, axes = plt.subplots(ncomp, 1, figsize=(7, 3.2 * ncomp), squeeze=False)
     for ic, ax in enumerate(axes[:, 0]):
-        for il in range(nl):
-            if np.all(np.isnan(pdos[:, ic, :, il])):
-                continue
-            color = SERIES[il % len(SERIES)]
-            label = L_NAMES[il] if il < len(L_NAMES) else f"l={il}"
-            ax.plot(energy, pdos[0, ic, :, il], color=color, linewidth=1.6, label=label)
-            if nspin > 1:
-                ax.plot(energy, -pdos[1, ic, :, il], color=color, linewidth=1.6)
-        if nspin > 1:
-            ax.axhline(0.0, color=INK2, linewidth=0.6)
-        _mark_contour_bottom(ax, energy, node)
+        _pk().plot_pdos(ax, energy, pdos[:, ic, :, :], ewidth_go=-ebtm, ewidth_label=label, style=STYLE,
+                        l_names=L_NAMES, mirror_down=True, efermi=False)
         ax.legend(frameon=False)
         _style(ax, "$E - E_F$ (Ry)", "PDOS (states/Ry)" + (" (up +, down -)" if nspin > 1 else ""),
                f"{prefix}: PDOS {names[ic]}")
@@ -120,7 +107,6 @@ def plot_pdos(node, path, prefix):
 
 
 def plot_awk(node, outdir, prefix):
-    import numpy as np
     from pyakaikkr import AwkReader
 
     plt = _plt()
@@ -134,13 +120,8 @@ def plot_awk(node, outdir, prefix):
         with awkfile.open(awkfile.filename) as handle:
             awk = AwkReader(handle)
         fig, ax = plt.subplots(figsize=(8, 5))
-        mesh = ax.pcolormesh(awk.kdist, awk.energy, awk.Awk.T, cmap="Blues", shading="auto",
-                             vmin=0.0, vmax=np.percentile(awk.Awk, 99.5))
-        for x in awk.kdist[awk.kcrt]:
-            ax.axvline(x, color=INK2, linewidth=0.6)
-        ax.axhline(0.0, color=INK2, linewidth=0.8, linestyle="--")
-        ax.set_xticks(awk.kdist[awk.kcrt])
-        ax.set_xticklabels(klabel[:len(awk.kcrt)])
+        mesh = _pk().plot_awk(ax, awk.kdist, awk.energy, awk.Awk, awk.kcrt, klabel, style=STYLE, cmap="Blues",
+                              vmax_percentile=99.5)
         ax.set_ylabel("$E - E_F$ (Ry)", color=INK)
         ax.set_title(f"{prefix}: A(w,k) spin {spin}", loc="left", color=INK, fontsize=11)
         ax.tick_params(colors=INK2)
@@ -159,11 +140,7 @@ def _component_shortnames(node):
     """{type name: [component short name, ...]} from results["type_of_site"] (e.g. Rh, Pt of a CPA type)."""
     names = {}
     for t in node.outputs.results["type_of_site"]:
-        short = []
-        for c in t["comp_shortname"]:
-            comp = c[len(t["type"]) + 1:] if c.startswith(t["type"] + "_") else c
-            short.append(comp.split("_")[0] if comp != c else c)  # "Rh_50.0%" -> "Rh"
-        names[t["type"]] = short
+        names[t["type"]] = _pk().component_names([t], long=False)
     return names
 
 
@@ -189,6 +166,7 @@ def plot_jij(node, outdir, prefix, csv=True):
     import math
 
     plt = _plt()
+    pk = _pk()
     df = jij_dataframe(node)
     short = _component_shortnames(node)
     tc = node.outputs.Tc.value if "Tc" in node.outputs else None
@@ -197,12 +175,7 @@ def plot_jij(node, outdir, prefix, csv=True):
         path = os.path.join(outdir, f"{prefix}_jij.csv")
         df.to_csv(path, index=False)
         written.append(path)
-
-    xpad = 0.05 * (df["distance"].max() - df["distance"].min() or 1.0)
-    xlim = (df["distance"].min() - xpad, df["distance"].max() + xpad)
-    ypad = 0.05 * (df["J_ij(meV)"].max() - df["J_ij(meV)"].min() or 1.0)
-    ylim = (df["J_ij(meV)"].min() - ypad, df["J_ij(meV)"].max() + ypad)
-
+    xlim, ylim = pk.jij_limits(df["distance"], df["J_ij(meV)"])
     for (t1, t2), dft in df.groupby(["type1", "type2"], sort=False):
         pairs = list(dft.groupby(["comp1", "comp2"], sort=False))
         ncols = min(len(pairs), 3)
@@ -212,16 +185,12 @@ def plot_jij(node, outdir, prefix, csv=True):
         for ax in axes.flat[len(pairs):]:
             ax.set_visible(False)
         for ax, ((c1, c2), dfc) in zip(axes.flat, pairs):
-            dfc = dfc.sort_values("distance")
-            ax.plot(dfc["distance"], dfc["J_ij(meV)"], color=SERIES[0], linewidth=1.4, marker="o", markersize=4)
-            ax.axhline(0.0, color=INK2, linewidth=0.8, linestyle="--")
             n1 = short.get(t1, [])
             n2 = short.get(t2, [])
             c1name = n1[int(c1) - 1] if 0 < int(c1) <= len(n1) else f"comp{c1}"
             c2name = n2[int(c2) - 1] if 0 < int(c2) <= len(n2) else f"comp{c2}"
+            pk.plot_jij(ax, dfc["distance"], dfc["J_ij(meV)"], style=STYLE, xlim=xlim, ylim=ylim)
             _style(ax, "$R / a$", "$J_{ij}$ (meV)", f"{c1name}-{c2name}", efermi=False)
-            ax.set_xlim(xlim)
-            ax.set_ylim(ylim)
             ax.title.set_fontsize(10)
         title = f"{prefix}: $J_{{ij}}$ {t1} - {t2}"
         if tc is not None:
@@ -235,36 +204,24 @@ def plot_jij(node, outdir, prefix, csv=True):
     return written
 
 
-def _shade_ewidth_bounds(ax, parameters, entry=None):
-    """hatch the band E_F - max_ewidth .. E_F - min_ewidth: the ewidth may only be chosen inside it
-    (gap regions are judged over the whole window, independent of the bounds). A history entry
-    carries the bounds of that judgement (orbital rules re-derive them from the core levels)."""
+def _gaes_bounds(parameters, entry=None):
+    """[min_ewidth, max_ewidth] of a GAES judgement: the entry's own bounds (orbital rules re-derive them
+    from the core levels) else the parameters (None = the defaults 1.0 / 2.0)."""
     if entry is not None and entry.get("orbital_bounds"):
-        lo, hi = entry["orbital_bounds"]
-    else:
-        lo, hi = parameters.get("min_ewidth"), parameters.get("max_ewidth")
-        lo = 1.0 if lo is None else lo
-        hi = 2.0 if hi is None else hi
-    left = -hi if hi is not None else ax.get_xlim()[0]
-    right = -lo if lo is not None else 0.0
-    ax.axvspan(left, right, facecolor="none", edgecolor=INK2, hatch="///", linewidth=0.0, alpha=0.25,
-               label=f"[min, max] ewidth = [{lo}, {hi}]")
-    window_bottom = ((entry or {}).get("window") or [-6.0, 1.0])[0]
-    for key, (level, star) in (entry or {}).get("orbital_levels", {}).items():
-        if level > window_bottom:
-            ax.axvline(level, color=INK2, linewidth=0.8, linestyle="--" if star else "-", alpha=0.7)
-            ax.text(level, 0.98, f"{key}{'*' if star else ''}", rotation=90, fontsize=7, color=INK2,
-                    ha="right", va="top", transform=ax.get_xaxis_transform())
+        return tuple(entry["orbital_bounds"])
+    lo, hi = parameters.get("min_ewidth"), parameters.get("max_ewidth")
+    return (1.0 if lo is None else lo, 2.0 if hi is None else hi)
 
 
 def plot_gaes(node, outdir, prefix):
     """DOS of every GAES iteration (one PNG each, plus an overview): coarse gap regions (green),
-    fine sub-regions (blue), the [min_ewidth, max_ewidth] band (hatched), -ewidth of that go (red)
-    and the final ewidth (dashed)."""
-    import numpy as np
-
+    fine sub-regions (blue), the [min_ewidth, max_ewidth] band (hatched), the core levels of the
+    orbital rules, -ewidth of that go (red), the final ewidth (dashed) and the thresholds
+    (per atom x natm, in the per-cell unit of the plot). Drawn by pyakaikkr.plot.plot_gaes_dos."""
     plt = _plt()
+    pk = _pk()
     history = node.outputs.history.get_list()
+    params = node.outputs.parameters.get_dict()
     final = node.outputs.ewidth.value if "ewidth" in node.outputs else None
     status = node.outputs.status.value if "status" in node.outputs else "running"
     written = []
@@ -272,22 +229,14 @@ def plot_gaes(node, outdir, prefix):
     for k, h in enumerate(history):
         dos_node = load_node(h["dos_pk"])
         energy = dos_node.outputs.dos.get_array("energy")
-        dos = np.asarray(dos_node.outputs.dos.get_array("dos"), dtype=float)
-        curve = dos.sum(axis=0) if dos.ndim == 2 else dos
+        dos = dos_node.outputs.dos.get_array("dos")
         fig, ax = plt.subplots(figsize=(8, 4.2))
-        ax.plot(energy, curve, color=SERIES[0], linewidth=1.4, label=f"total DOS, ewidth_go {h['ewidth']:.4f}")
-        for a, b in h.get("coarse_regions", []):
-            ax.axvspan(a, b, color=SERIES[2], alpha=0.12)
-        for a, b in h.get("fine_regions", []):
-            ax.axvspan(a, b, color=SERIES[0], alpha=0.18)
-        _shade_ewidth_bounds(ax, node.outputs.parameters, h)
-        ax.axvline(-h["ewidth"], color=SERIES[3], linewidth=1.0, linestyle="-.", label="$-$ewidth of this go")
-        if final is not None and abs(final - h["ewidth"]) > 1e-6:
-            ax.axvline(-final, color=SERIES[1], linewidth=1.0, linestyle="--", label=f"$-$ewidth final ({final:.4f})")
-        scale = h.get("natm") or 1   # thresholds are per atom; the plot keeps the DOS per cell
-        for th, ls in ((node.outputs.parameters.get("dosth", 2e-2), "--"), (node.outputs.parameters.get("dosth2", 1e-3), ":")):
-            ax.axhline(th * scale, color=INK2, linewidth=0.6, linestyle=ls)
-        ax.set_yscale("log")
+        pk.plot_gaes_dos(ax, energy, dos, ewidth=h["ewidth"], ewidth_label="$-$ewidth of this go", final=final,
+                         coarse=h.get("coarse_regions", []), fine=h.get("fine_regions", []),
+                         bounds=_gaes_bounds(params, h), levels=h.get("orbital_levels", {}),
+                         highlight=list(h.get("orbital_levels", {})), natm=h.get("natm"),
+                         dosth=params.get("dosth", 2e-2), dosth2=params.get("dosth2", 1e-3), style=STYLE,
+                         ylim=None, dos_label=f"total DOS, ewidth_go {h['ewidth']:.4f}", efermi=False)
         ax.legend(frameon=False, fontsize=8)
         _style(ax, "$E - E_F$ (Ry)", "DOS (states/Ry, spin sum)",
                f"{prefix}: GAES iew={h['iew']} ewidth={h['ewidth']:.4f} -> {h['flag']}"
@@ -297,9 +246,14 @@ def plot_gaes(node, outdir, prefix):
         fig.savefig(path, dpi=150)
         plt.close(fig)
         written.append(path)
+        curve = dos.sum(axis=0) if dos.ndim == 2 else dos
         ax_all.plot(energy, curve, linewidth=1.2, color=SERIES[k % len(SERIES)],
                     label=f"iew={h['iew']} ewidth={h['ewidth']:.4f} ({h['flag']})")
-    _shade_ewidth_bounds(ax_all, node.outputs.parameters, history[-1] if history else None)
+    last = history[-1] if history else None
+    pk.shade_ewidth_bounds(ax_all, _gaes_bounds(params, last), style=STYLE)
+    if last is not None:
+        pk.draw_levels(ax_all, last.get("orbital_levels", {}), highlight=list(last.get("orbital_levels", {})),
+                       e_min=(last.get("window") or [None])[0], style=STYLE)
     if final is not None:
         ax_all.axvline(-final, color=INK, linewidth=1.0, linestyle="-.", label=f"$-$ewidth final ({final:.4f})")
     ax_all.set_yscale("log")
