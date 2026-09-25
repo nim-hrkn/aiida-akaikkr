@@ -42,4 +42,8 @@ FeB1.95 は cnd の参照に無いので比較していません。
 
 ## preset とリモート code（2026-09-25）
 
-`submit-chain --preset Cu --code specx-akaikkr@mygardenx1-async` は `make_common_param` が Excepted になる。`preset_common_param` が code の `filepath_executable` をローカルの specx として実行して構造を作るため、リモートの code ではパスが存在せず `_Cu_common_param` に `None` が渡る。回避: ローカル code で作った common Dict を `--structure-pk` で渡す、または `--comp` を使う。恒久対策は preset の構造生成をローカルの specx（設定値）で行うこと（未実装）。
+`submit-chain --preset Cu --code specx-akaikkr@mygardenx1-async` は `make_common_param` が Excepted になる。`preset_common_param` が code の `filepath_executable` をローカルの specx として実行して構造を作るため、リモートの code ではパスが存在せず `_Cu_common_param` に `None` が渡る。回避: ローカル code で作った common Dict を `--structure-pk` で渡す、または `--comp` を使う。対策済み（2026-09-25、`inputs.local_specx_for`）: code の実行ファイルがローカルに無ければ、環境変数 `AKAIKKR_LOCAL_SPECX`、次に同じラベルで core.local の computer にある code の実行ファイルを使う。どれも無ければ FileNotFoundError。preset Cu を `specx-akaikkr@mygardenx1-async` で投入して `make_common_param` が Finished [0] になることを確認した。
+
+## mygardenx1 の SLURM ノードが drained（2026-09-25）
+
+`sinfo` で localhost が `drained`、理由 `Low RealMemory (reported:386444 < 100.00% of configured:386470)`（2026-07-29 から）。slurm.conf の `RealMemory=386470` が実測 386444 MB より大きいため slurmd が登録時に drain する。ジョブは PENDING のまま走らない。root で `/etc/slurm/slurm.conf` の `RealMemory` を実測以下（例 386000）にして `scontrol reconfigure`、`scontrol update NodeName=localhost State=RESUME`。この sandbox では sudo が使えない。

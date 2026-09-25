@@ -126,7 +126,8 @@ done
 ```
 
   `specx-akaikkr@mygardenx1-async`（pk 3705）、`specx-cnd@mygardenx1-async`（3706）、`specx-cpa2021v01@mygardenx1-async`（3707）。
-- 制限: `--preset` の構造生成（`preset_common_param`）は code の実行ファイルのパスを**ローカルで**呼ぶため、リモートの code では `TypeError: 'NoneType' object does not support item assignment` で止まる（`make_common_param` が Excepted）。リモートで preset を使うには、ローカルの code で一度 `make_common_param` を作ってから `--structure-pk` で渡すか、`--comp`（単一サイト CPA、specx 不要）を使う。
+- `--preset` / CIF の構造生成（`make_common_param`）は specx を geometry モードで**ローカル**（daemon のホスト）で一度実行する。code がリモートのときは `inputs.local_specx_for` がローカルの specx を探す（code のパス → 環境変数 `AKAIKKR_LOCAL_SPECX` → 同じラベルの core.local の code）。mygardenx2 に同名の code があるので、そのまま使える。
+- mygardenx1 の SLURM ノードは 2026-07-29 から drained（RealMemory の設定が実測より大きい）。root で slurm.conf を直して resume するまでジョブは PENDING（docs/known_issues.md）。
 - `--max-io-allowed 8` は同時に開く ssh/sftp 接続の上限。
 
 ## 5. specx の code

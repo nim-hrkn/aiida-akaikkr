@@ -15,6 +15,35 @@ from .presets import MATERIALS, MODES, STRUCTURE_KEYS, mode_parameter_overrides
 GENERIC = "generic"
 
 
+def local_specx_for(code) -> str:
+    """specx executable to run *locally* for the geometry step of make_common_param.
+
+    The structure conversion (CIF -> AkaiKKR bravais parameters) runs specx once in a temporary
+    directory on the machine where the calcfunction executes (the daemon host), so the path of a
+    code on a remote computer (e.g. specx-akaikkr@mygardenx1-async) cannot be used. Order:
+    the code's own executable when it exists here; else the environment variable
+    AKAIKKR_LOCAL_SPECX; else a code with the same label on a computer with the core.local
+    transport; else a clear error.
+    """
+    exe = str(code.filepath_executable)
+    if os.path.isfile(exe):
+        return exe
+    env = os.environ.get("AKAIKKR_LOCAL_SPECX")
+    if env and os.path.isfile(env):
+        return env
+    from aiida.orm import QueryBuilder
+    for other in QueryBuilder().append(orm.InstalledCode, filters={"label": code.label}).all(flat=True):
+        try:
+            if other.computer.transport_type == "core.local" and os.path.isfile(str(other.filepath_executable)):
+                return str(other.filepath_executable)
+        except Exception:  # noqa: BLE001
+            continue
+    raise FileNotFoundError(
+        f"specx of code {code.full_label} is not available on this machine ({exe}); the structure "
+        "conversion needs a local specx: set AKAIKKR_LOCAL_SPECX or register a code with the same label "
+        "on a core.local computer")
+
+
 @calcfunction
 def make_common_param(func_name: orm.Str, code: orm.InstalledCode, cif: orm.SinglefileData,
                       displc: orm.Bool, magtype: orm.Str) -> orm.Dict:
@@ -27,7 +56,7 @@ def make_common_param(func_name: orm.Str, code: orm.InstalledCode, cif: orm.Sing
     from akaikkr_testscript import get_kkr_struc_from_cif
     from akaikkr_testscript import testrun_class as trc
 
-    exe = str(code.filepath_executable)
+    exe = local_specx_for(code)
     with tempfile.TemporaryDirectory() as tmpdir:
         ciffilepath = os.path.join(tmpdir, cif.filename)
         with open(ciffilepath, "w") as f:
