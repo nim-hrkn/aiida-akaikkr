@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 300" font-family="-apple-system, 'Segoe UI', Roboto, 'Noto Sans JP', sans-serif" font-size="15">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/>
+    </marker>
+  </defs>
+  <rect width="980" height="300" fill="#ffffff"/>
+  <!-- row 1: LLM - MCP - aiida-akaikkr - AiiDA - computer -->
+  <g stroke="#2a4a7a" stroke-width="1.5">
+    <rect x="20" y="60" width="130" height="64" rx="8" fill="#eef5ff"/>
+    <rect x="200" y="60" width="110" height="64" rx="8" fill="#f4f4f1"/>
+    <rect x="360" y="60" width="170" height="64" rx="8" fill="#e6f4ec"/>
+    <rect x="580" y="60" width="130" height="64" rx="8" fill="#f4f4f1"/>
+    <rect x="760" y="60" width="200" height="64" rx="8" fill="#f4f4f1"/>
+    <!-- row 2: pyakaikkr - AkaiKKR -->
+    <rect x="360" y="190" width="170" height="64" rx="8" fill="#e6f4ec"/>
+    <rect x="760" y="190" width="200" height="64" rx="8" fill="#fff7e6"/>
+  </g>
+  <g text-anchor="middle" fill="#0b0b0b">
+    <text x="85" y="86">Claude</text><text x="85" y="108" font-size="12" fill="#52514e">LLM（人が日本語で指示）</text>
+    <text x="255" y="86">MCP</text><text x="255" y="108" font-size="12" fill="#52514e">akaikkr-mcp</text>
+    <text x="445" y="86" font-weight="bold">aiida-akaikkr</text><text x="445" y="108" font-size="12" fill="#52514e">CalcJob / WorkChain / CLI</text>
+    <text x="645" y="86">AiiDA</text><text x="645" y="108" font-size="12" fill="#52514e">来歴・投入・保存</text>
+    <text x="860" y="86">計算機</text><text x="860" y="108" font-size="12" fill="#52514e">SLURM（local / ssh）で specx</text>
+    <text x="445" y="216" font-weight="bold">pyakaikkr</text><text x="445" y="238" font-size="12" fill="#52514e">入力生成・出力解析・図・GAES・レポート</text>
+    <text x="860" y="216">AkaiKKR (specx)</text><text x="860" y="238" font-size="12" fill="#52514e">go / dos / spc / jij / tc / cnd</text>
+  </g>
+  <g stroke="#52514e" stroke-width="1.6" fill="none" marker-end="url(#arr)" marker-start="url(#arr)">
+    <line x1="150" y1="92" x2="200" y2="92"/>
+    <line x1="310" y1="92" x2="360" y2="92"/>
+    <line x1="530" y1="92" x2="580" y2="92"/>
+    <line x1="710" y1="92" x2="760" y2="92"/>
+  </g>
+  <g stroke="#52514e" stroke-width="1.6" fill="none" marker-end="url(#arr)">
+    <line x1="445" y1="124" x2="445" y2="190"/>
+    <line x1="530" y1="222" x2="760" y2="222"/>
+    <line x1="860" y1="190" x2="860" y2="124" stroke-dasharray="5 4"/>
+  </g>
+  <g font-size="12" fill="#52514e">
+    <text x="455" y="162">入出力の処理を委ねる</text>
+    <text x="560" y="214">inputcard を書く / out_*.log を読む</text>
+    <text x="870" y="162">ジョブとして実行</text>
+    <text x="20" y="285">実線: 呼び出し、破線: 計算機上で specx が動く。人は左端の Claude にだけ話す。</text>
+  </g>
+</svg>

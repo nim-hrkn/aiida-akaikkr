@@ -45,6 +45,12 @@ ARCH = """Claude（LLM） ── MCP ── aiida-akaikkr ── AiiDA ── �
                               └── pyakaikkr ───────── AkaiKKR (specx)
                                    入力を書く / 出力を読む / 図を描く"""
 
+import json as _json
+_ex = _json.load(open(os.path.join(HERE, "smco5_example.json"))) if os.path.exists(os.path.join(HERE, "smco5_example.json")) else {}
+def _fill(t):
+    for k, v in _ex.items():
+        t = t.replace("{" + k + "}", str(v))
+    return t
 page = []
 page.append("""<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>aiida-akaikkr 入門</title><style>{}</style></head><body>""".format(CSS))
 page.append("<h1>aiida-akaikkr 入門 — AkaiKKR を AiiDA と LLM から使う</h1>")
@@ -55,7 +61,8 @@ page.append("""<p><b>AkaiKKR（specx）</b>は KKR-CPA 法の第一原理計算�
 入力の生成と出力の解析、図の描画は Python ライブラリ <b>pyakaikkr</b>（AkaiKKRPythonUtil）が担当します。</p>""")
 
 page.append("<h2>構成</h2>")
-page.append('<div class="arch">{}</div>'.format(html.escape(ARCH)))
+page.append(svg("architecture.svg", max_width="980px"))
+page.append('<p class="cap">図 0: 構成。人は Claude に日本語で指示し、Claude が MCP ツールを呼ぶ。aiida-akaikkr が AiiDA を通して計算機に specx のジョブを投げ、pyakaikkr が入出力と図を担当する。</p>')
 page.append("""<table><tr><th>層</th><th>役割</th></tr>
 <tr><td>Claude + MCP</td><td>「Cu の DOS を計算して」のような指示を、MCP ツール <code>kkr_submit_chain</code> などの呼び出しに変える</td></tr>
 <tr><td>aiida-akaikkr</td><td>AkaiKKR の各モード（go, dos, spc, jij, tc, cnd, fsm）を AiiDA の CalcJob に、go → 後続 や ewidth の自動決定（GAES）を WorkChain にする。CLI <code>akaikkr-aiida</code>、MCP <code>akaikkr-mcp</code></td></tr>
@@ -99,18 +106,29 @@ page.append("""<p>1 つの計算（go とその後続）の要約を、図付き
 <p>例: <a href="data/report_SmCo5_oc_ja.html">SmCo5（open core）のレポート</a>、<a href="data/report_FeRh05Pt05_aiida_ja.html">FeRh0.5Pt0.5（AiiDA、図 1 の計算）のレポート</a>、<a href="data/report_Cu_gaes_aiida_ja.html">Cu の GAES のレポート</a>。</p>""")
 page.append('<div class="say"><b>Claude に:</b> 「pk 2682 のレポートを日本語で作って」 → <code>kkr_report(pk=2682, lang="ja")</code>（HTML のパスと要約が返る）</div>')
 
-page.append("<h2>利点 4: LLM 経由なので操作が楽</h2>")
+page.append("<h2>利点 4: LLM 経由なので、人にとって操作が楽</h2>")
 page.append("""<p>inputcard の書式、AiiDA の <code>verdi</code> コマンド、pk の追い方を覚えなくても、やりたいことを日本語で言えば Claude が対応する MCP ツールを選び、
-結果を読んで説明します。ツールは読み取り（状態、結果、図、来歴、レポート）と投入（go、後続、chain、GAES）に分かれていて、投入は起動時に許可した場合だけ使えます。</p>
-<table><tr><th>言うこと</th><th>Claude が呼ぶもの</th></tr>
+順に呼び、結果を読んで説明します。ツールは読み取り（状態、結果、図、来歴、レポート）と投入（go、後続、chain、GAES）に分かれていて、投入は起動時に許可した場合だけ使えます。</p>
+<h3>実際の指示例</h3>
+<div class="say"><b>人:</b> 「ファイル structure/SmCo5_P6mmm.cif を読んで、GAES で ewidth を決めて、J<sub>ij</sub> を計算し、レポートを出せ」</div>
+<p>Claude はこの 1 文を次の 4 段に分けて実行します（2026-09-26 に実際に行った例。pk はそのときの値）。</p>
+<table><tr><th>段</th><th>Claude が呼ぶツール</th><th>返るもの</th></tr>
+<tr><td>1. CIF を読む</td><td><code>kkr_structure_from_cif(cif_path="structure/SmCo5_P6mmm.cif", code="specx-akaikkr@mygardenx2-slurm", magtype="mag")</code></td><td>構造の Dict pk {STRUCTURE_PK}（P6/mmm、6 原子、type Sm_1a_0 / Co_3g_1 / Co_2c_4）</td></tr>
+<tr><td>2. ewidth を決める</td><td><code>kkr_submit_gaes(structure_pk={STRUCTURE_PK}, code=..., ncores=12)</code> → <code>kkr_wait(pk)</code> を繰り返す</td><td>GAES WorkChain pk {GAES_PK}: {GAES_RESULT}</td></tr>
+<tr><td>3. J<sub>ij</sub> を計算</td><td><code>kkr_submit_followup(go_pk={GO_PK}, mode="jij")</code> → <code>kkr_wait</code></td><td>jij CalcJob pk {JIJ_PK}: {JIJ_RESULT}</td></tr>
+<tr><td>4. レポート</td><td><code>kkr_report(pk={GAES_PK}, jij_pk={JIJ_PK}, lang="ja")</code></td><td><a href="data/report_SmCo5_gaes_ja.html">HTML レポート</a>（式、空間群、SCF、成分表、DOS、J<sub>ij</sub>、GAES の図）</td></tr></table>
+<p>人が書いたのは最初の 1 文だけです。CLI で同じことをすると次の 4 コマンドになります。</p>
+""")
+page.append(code("""akaikkr-aiida structure --cif-path structure/SmCo5_P6mmm.cif --code specx-akaikkr@mygardenx2-slurm --magtype mag   # -> pk {STRUCTURE_PK}
+akaikkr-aiida submit-gaes --structure-pk {STRUCTURE_PK} --code specx-akaikkr@mygardenx2-slurm --ncores 12            # -> pk {GAES_PK}
+akaikkr-aiida submit-followup --go-pk {GO_PK} --mode jij                                                             # -> pk {JIJ_PK}
+akaikkr-aiida report --pk {GAES_PK} --jij-pk {JIJ_PK} --lang ja"""))
+page.append("""<table><tr><th>他の言い方</th><th>Claude が呼ぶもの</th></tr>
 <tr><td>「Cu の DOS とバンド分散を計算して」</td><td><code>kkr_submit_chain(preset="Cu", modes="dos,spc")</code></td></tr>
 <tr><td>「今走っている計算は？」</td><td><code>kkr_list()</code>、<code>kkr_process(pk)</code></td></tr>
 <tr><td>「pk 2682 の結果を見せて」</td><td><code>kkr_results(pk=2682)</code></td></tr>
-<tr><td>「DOS の図を描いて」</td><td><code>kkr_plot(dos_pk=...)</code></td></tr>
-<tr><td>「Bi2Se3 の CIF から ewidth を自動で決めて」</td><td><code>kkr_structure_from_cif(...)</code> → <code>kkr_submit_gaes(structure_pk=...)</code></td></tr>
-<tr><td>「この結果をレポートにして」</td><td><code>kkr_report(pk=..., lang="ja")</code></td></tr></table>
+<tr><td>「SeMnFeCo の Se 4s を core にして ewidth を決めて」</td><td><code>kkr_submit_gaes(comp="SeMnFeCo", polytyp="fcc", orbital="Se4s=core")</code></td></tr></table>
 <div class="note">全部の操作は CLI <code>akaikkr-aiida</code> でも同じにできます（MCP は CLI を呼ぶ薄い層です）。行動記録は <code>~/.aiida-akaikkr/log/</code> に残ります。</div>""")
-
 page.append("<h2>動かすまで</h2>")
 page.append(code("""# 環境（conda env akaikkr）: aiida-core 2.9、RabbitMQ、pyakaikkr、aiida-akaikkr
 pip install -e AkaiKKRPythonUtil/library/PyAkaiKKR    # pyakaikkr
@@ -131,5 +149,5 @@ page.append("""<ul>
 <li>多原子胞ではギャップ判定の DOS を原子あたりに直します（既定）。1 原子の CPA 用に決めた閾値をそのまま使うためです。</li></ul>""")
 page.append('<p class="meta">aiida-akaikkr v1.0.0 / pyakaikkr v1.0.0（2026-09-26）。図は inline SVG（来歴図は AiiDA の graphviz 出力、その他は pyakaikkr.plot）。</p>')
 page.append("</body></html>")
-open(OUT, "w", encoding="utf-8").write("\n".join(page))
+open(OUT, "w", encoding="utf-8").write(_fill("\n".join(page)))
 print("wrote", OUT, "%.0f KB" % (os.path.getsize(OUT) / 1024))

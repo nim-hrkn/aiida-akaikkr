@@ -16,10 +16,53 @@ a{color:#2a4a7a}.meta{color:#52514e;font-size:.85em;margin-top:3em}
 計算の投入・監視・結果の取り出しをコマンド（CLI）と MCP ツールで提供し、Claude のような LLM から自然言語で操作できます。
 入力の生成と出力の解析、図の描画は Python ライブラリ <b>pyakaikkr</b>（AkaiKKRPythonUtil）が担当します。</p>
 <h2>構成</h2>
-<div class="arch">Claude（LLM） ── MCP ── aiida-akaikkr ── AiiDA ── 計算機（SLURM / ssh）
-                              │                        │
-                              └── pyakaikkr ───────── AkaiKKR (specx)
-                                   入力を書く / 出力を読む / 図を描く</div>
+<div class="fig" style="max-width:980px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 300" font-family="-apple-system, 'Segoe UI', Roboto, 'Noto Sans JP', sans-serif" font-size="15">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/>
+    </marker>
+  </defs>
+  <rect width="980" height="300" fill="#ffffff"/>
+  <!-- row 1: LLM - MCP - aiida-akaikkr - AiiDA - computer -->
+  <g stroke="#2a4a7a" stroke-width="1.5">
+    <rect x="20" y="60" width="130" height="64" rx="8" fill="#eef5ff"/>
+    <rect x="200" y="60" width="110" height="64" rx="8" fill="#f4f4f1"/>
+    <rect x="360" y="60" width="170" height="64" rx="8" fill="#e6f4ec"/>
+    <rect x="580" y="60" width="130" height="64" rx="8" fill="#f4f4f1"/>
+    <rect x="760" y="60" width="200" height="64" rx="8" fill="#f4f4f1"/>
+    <!-- row 2: pyakaikkr - AkaiKKR -->
+    <rect x="360" y="190" width="170" height="64" rx="8" fill="#e6f4ec"/>
+    <rect x="760" y="190" width="200" height="64" rx="8" fill="#fff7e6"/>
+  </g>
+  <g text-anchor="middle" fill="#0b0b0b">
+    <text x="85" y="86">Claude</text><text x="85" y="108" font-size="12" fill="#52514e">LLM（人が日本語で指示）</text>
+    <text x="255" y="86">MCP</text><text x="255" y="108" font-size="12" fill="#52514e">akaikkr-mcp</text>
+    <text x="445" y="86" font-weight="bold">aiida-akaikkr</text><text x="445" y="108" font-size="12" fill="#52514e">CalcJob / WorkChain / CLI</text>
+    <text x="645" y="86">AiiDA</text><text x="645" y="108" font-size="12" fill="#52514e">来歴・投入・保存</text>
+    <text x="860" y="86">計算機</text><text x="860" y="108" font-size="12" fill="#52514e">SLURM（local / ssh）で specx</text>
+    <text x="445" y="216" font-weight="bold">pyakaikkr</text><text x="445" y="238" font-size="12" fill="#52514e">入力生成・出力解析・図・GAES・レポート</text>
+    <text x="860" y="216">AkaiKKR (specx)</text><text x="860" y="238" font-size="12" fill="#52514e">go / dos / spc / jij / tc / cnd</text>
+  </g>
+  <g stroke="#52514e" stroke-width="1.6" fill="none" marker-end="url(#arr)" marker-start="url(#arr)">
+    <line x1="150" y1="92" x2="200" y2="92"/>
+    <line x1="310" y1="92" x2="360" y2="92"/>
+    <line x1="530" y1="92" x2="580" y2="92"/>
+    <line x1="710" y1="92" x2="760" y2="92"/>
+  </g>
+  <g stroke="#52514e" stroke-width="1.6" fill="none" marker-end="url(#arr)">
+    <line x1="445" y1="124" x2="445" y2="190"/>
+    <line x1="530" y1="222" x2="760" y2="222"/>
+    <line x1="860" y1="190" x2="860" y2="124" stroke-dasharray="5 4"/>
+  </g>
+  <g font-size="12" fill="#52514e">
+    <text x="455" y="162">入出力の処理を委ねる</text>
+    <text x="560" y="214">inputcard を書く / out_*.log を読む</text>
+    <text x="870" y="162">ジョブとして実行</text>
+    <text x="20" y="285">実線: 呼び出し、破線: 計算機上で specx が動く。人は左端の Claude にだけ話す。</text>
+  </g>
+</svg>
+</div>
+<p class="cap">図 0: 構成。人は Claude に日本語で指示し、Claude が MCP ツールを呼ぶ。aiida-akaikkr が AiiDA を通して計算機に specx のジョブを投げ、pyakaikkr が入出力と図を担当する。</p>
 <table><tr><th>層</th><th>役割</th></tr>
 <tr><td>Claude + MCP</td><td>「Cu の DOS を計算して」のような指示を、MCP ツール <code>kkr_submit_chain</code> などの呼び出しに変える</td></tr>
 <tr><td>aiida-akaikkr</td><td>AkaiKKR の各モード（go, dos, spc, jij, tc, cnd, fsm）を AiiDA の CalcJob に、go → 後続 や ewidth の自動決定（GAES）を WorkChain にする。CLI <code>akaikkr-aiida</code>、MCP <code>akaikkr-mcp</code></td></tr>
@@ -11262,16 +11305,28 @@ L 108 36
 計算条件、SCF の結果（E<sub>F</sub>、全エネルギー、全モーメント）、成分ごとのモーメントと電荷、DOS / PDOS / A(ω,k) / J<sub>ij</sub>（キュリー温度）/ GAES の図、cnd の値、来歴。日本語と英語。</p>
 <p>例: <a href="data/report_SmCo5_oc_ja.html">SmCo5（open core）のレポート</a>、<a href="data/report_FeRh05Pt05_aiida_ja.html">FeRh0.5Pt0.5（AiiDA、図 1 の計算）のレポート</a>、<a href="data/report_Cu_gaes_aiida_ja.html">Cu の GAES のレポート</a>。</p>
 <div class="say"><b>Claude に:</b> 「pk 2682 のレポートを日本語で作って」 → <code>kkr_report(pk=2682, lang="ja")</code>（HTML のパスと要約が返る）</div>
-<h2>利点 4: LLM 経由なので操作が楽</h2>
+<h2>利点 4: LLM 経由なので、人にとって操作が楽</h2>
 <p>inputcard の書式、AiiDA の <code>verdi</code> コマンド、pk の追い方を覚えなくても、やりたいことを日本語で言えば Claude が対応する MCP ツールを選び、
-結果を読んで説明します。ツールは読み取り（状態、結果、図、来歴、レポート）と投入（go、後続、chain、GAES）に分かれていて、投入は起動時に許可した場合だけ使えます。</p>
-<table><tr><th>言うこと</th><th>Claude が呼ぶもの</th></tr>
+順に呼び、結果を読んで説明します。ツールは読み取り（状態、結果、図、来歴、レポート）と投入（go、後続、chain、GAES）に分かれていて、投入は起動時に許可した場合だけ使えます。</p>
+<h3>実際の指示例</h3>
+<div class="say"><b>人:</b> 「ファイル structure/SmCo5_P6mmm.cif を読んで、GAES で ewidth を決めて、J<sub>ij</sub> を計算し、レポートを出せ」</div>
+<p>Claude はこの 1 文を次の 4 段に分けて実行します（2026-09-26 に実際に行った例。pk はそのときの値）。</p>
+<table><tr><th>段</th><th>Claude が呼ぶツール</th><th>返るもの</th></tr>
+<tr><td>1. CIF を読む</td><td><code>kkr_structure_from_cif(cif_path="structure/SmCo5_P6mmm.cif", code="specx-akaikkr@mygardenx2-slurm", magtype="mag")</code></td><td>構造の Dict pk 3792（P6/mmm、6 原子、type Sm_1a_0 / Co_3g_1 / Co_2c_4）</td></tr>
+<tr><td>2. ewidth を決める</td><td><code>kkr_submit_gaes(structure_pk=3792, code=..., ncores=12)</code> → <code>kkr_wait(pk)</code> を繰り返す</td><td>GAES WorkChain pk 3799: 実行中（この節は計算が終わり次第、結果で更新する）</td></tr>
+<tr><td>3. J<sub>ij</sub> を計算</td><td><code>kkr_submit_followup(go_pk=（GAES の最後の go）, mode="jij")</code> → <code>kkr_wait</code></td><td>jij CalcJob pk （未投入）: 実行中</td></tr>
+<tr><td>4. レポート</td><td><code>kkr_report(pk=3799, jij_pk=（未投入）, lang="ja")</code></td><td><a href="data/report_SmCo5_gaes_ja.html">HTML レポート</a>（式、空間群、SCF、成分表、DOS、J<sub>ij</sub>、GAES の図）</td></tr></table>
+<p>人が書いたのは最初の 1 文だけです。CLI で同じことをすると次の 4 コマンドになります。</p>
+
+<pre><code>akaikkr-aiida structure --cif-path structure/SmCo5_P6mmm.cif --code specx-akaikkr@mygardenx2-slurm --magtype mag   # -&gt; pk 3792
+akaikkr-aiida submit-gaes --structure-pk 3792 --code specx-akaikkr@mygardenx2-slurm --ncores 12            # -&gt; pk 3799
+akaikkr-aiida submit-followup --go-pk （GAES の最後の go） --mode jij                                                             # -&gt; pk （未投入）
+akaikkr-aiida report --pk 3799 --jij-pk （未投入） --lang ja</code></pre>
+<table><tr><th>他の言い方</th><th>Claude が呼ぶもの</th></tr>
 <tr><td>「Cu の DOS とバンド分散を計算して」</td><td><code>kkr_submit_chain(preset="Cu", modes="dos,spc")</code></td></tr>
 <tr><td>「今走っている計算は？」</td><td><code>kkr_list()</code>、<code>kkr_process(pk)</code></td></tr>
 <tr><td>「pk 2682 の結果を見せて」</td><td><code>kkr_results(pk=2682)</code></td></tr>
-<tr><td>「DOS の図を描いて」</td><td><code>kkr_plot(dos_pk=...)</code></td></tr>
-<tr><td>「Bi2Se3 の CIF から ewidth を自動で決めて」</td><td><code>kkr_structure_from_cif(...)</code> → <code>kkr_submit_gaes(structure_pk=...)</code></td></tr>
-<tr><td>「この結果をレポートにして」</td><td><code>kkr_report(pk=..., lang="ja")</code></td></tr></table>
+<tr><td>「SeMnFeCo の Se 4s を core にして ewidth を決めて」</td><td><code>kkr_submit_gaes(comp="SeMnFeCo", polytyp="fcc", orbital="Se4s=core")</code></td></tr></table>
 <div class="note">全部の操作は CLI <code>akaikkr-aiida</code> でも同じにできます（MCP は CLI を呼ぶ薄い層です）。行動記録は <code>~/.aiida-akaikkr/log/</code> に残ります。</div>
 <h2>動かすまで</h2>
 <pre><code># 環境（conda env akaikkr）: aiida-core 2.9、RabbitMQ、pyakaikkr、aiida-akaikkr
