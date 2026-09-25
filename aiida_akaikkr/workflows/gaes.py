@@ -188,7 +188,12 @@ class AkaikkrGaesWorkChain(WorkChain):
         if self.ctx.redo_dos:
             ewidth_dos = self.ctx.ewidth_dos_used
         else:
-            ewidth_dos = self._ewidth_dos_for(self.ctx.ewidth)
+            reach = self.ctx.ewidth
+            if self.ctx.rules:
+                # a valence rule may put min_ewidth below this go's contour: the window must reach it
+                lo = self._bounds(self.ctx.levels_seen, strict=False).min_ewidth
+                reach = max(reach, lo or 0.0)
+            ewidth_dos = self._ewidth_dos_for(reach)
         self.ctx.ewidth_dos_used = ewidth_dos
         overrides = dict(self.inputs.overrides.get_dict())
         overrides.update({"ewidth": ewidth_dos, "edelt": p["edelt_dos"], "record": "2nd"})
