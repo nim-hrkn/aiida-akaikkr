@@ -4,6 +4,7 @@ AkaiKKR（specx）を AiiDA から実行するプラグインの説明です。2
 
 | 文書 | 内容 |
 |---|---|
+| [intro_ja.html](intro_ja.html) | 入門 | 初心者向けの説明（構成図、来歴の例、KKR の ewidth と semicore、GAES の 2 例、レポート、LLM 経由の操作、動かすまで）。`data/intro/build_intro.py` で SVG から組み立てる |
 | [installation.md](installation.md) | 環境構築。AiiDA、RabbitMQ（conda、sudo 不要）、プロファイル、SLURM computer、specx code の登録 |
 | [calcjobs.md](calcjobs.md) | CalcJob（go / fsm / dos / jij / tc / spc / cnd）の入力・出力・exit code、パーサーの挙動と制限 |
 | [examples.md](examples.md) | `example/` のスクリプト（単発実行、テストセット一括実行、図の出力、参照値との比較、provenance graph） |

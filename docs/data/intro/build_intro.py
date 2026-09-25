@@ -1,11 +1,13 @@
-"""assemble aiida-akaikkr/docs/intro_ja.html (beginner's introduction, self-contained, inline SVG)."""
+"""assemble docs/intro_ja.html (beginner's introduction, self-contained, inline SVG) from the SVG sources next to this script:
+2682.dot.svg (verdi node graph generate 2682), atomic_levels.svg (tests/gaes/tools/plot_atomic_levels.py), alscnibi.svg and
+se4s_valence_core.svg (tests/gaes/tools/plot_orbital_rules.py on the tests/akaikkr GAES examples). usage: python build_intro.py [out.html]"""
 import html
 import os
 import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = sys.argv[1] if len(sys.argv) > 1 else "/home/kino/kino/Claude/Project/AKAIKKR/aiida-akaikkr/docs/intro_ja.html"
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.normpath(os.path.join(HERE, "..", "..", "intro_ja.html"))   # docs/intro_ja.html
 
 
 def svg(name, max_width="100%"):
