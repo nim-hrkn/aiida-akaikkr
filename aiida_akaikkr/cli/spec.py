@@ -121,7 +121,10 @@ SUBCOMMANDS = {
                                  "method": ("int", False, "1 or 2 (default 2)"),
                                  "dosth": ("float", False, "coarse threshold (default 2e-2)"),
                                  "dosth2": ("float", False, "fine threshold of Method 2 (default 1e-3)"),
-                                 "min_ewidth": ("float", False, "default 1.0"), "max_ewidth": ("float", False, "default 2.0"),
+                                 "min_ewidth": ("float", False, "default 1.0 (replaced by --orbital)"),
+                                 "max_ewidth": ("float", False, "default 2.0 (replaced by --orbital)"),
+                                 "orbital": ("str", False, "comma separated per-orbital rules deriving the ewidth range from "
+                                                           "the core levels, e.g. Rb4p=valence,Bi6s=core (occupied/unoccupied)"),
                                  "max_ew": ("int", False, "max number of ewidth values (default 10)"),
                                  "ewidth_dos": ("float", False, "dos window parameter (default 3.0, auto-widened)"),
                                  "ref": ("float", False, "cemesr ref of the build (0.75 akaikkr, 0.5 cpa2021v01/cnd)"),

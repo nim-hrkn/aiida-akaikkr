@@ -74,6 +74,9 @@ def get_basic_properties(output_card: (str, list), get_history: bool = True):
         else:
             core_level[s] = None
     results["core_level"] = core_level
+    # per-component core levels with the '*' (valence) mark, E - E_F: used by the GAES orbital rules
+    if hasattr(job, "get_core_levels_by_component"):
+        results["core_levels"] = job.get_core_levels_by_component(output_card)
     return results
 
 

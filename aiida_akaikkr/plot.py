@@ -235,14 +235,26 @@ def plot_jij(node, outdir, prefix, csv=True):
     return written
 
 
-def _shade_ewidth_bounds(ax, parameters):
+def _shade_ewidth_bounds(ax, parameters, entry=None):
     """hatch the band E_F - max_ewidth .. E_F - min_ewidth: the ewidth may only be chosen inside it
-    (gap regions are judged over the whole window, independent of the bounds)."""
-    lo, hi = parameters.get("min_ewidth"), parameters.get("max_ewidth")
-    if lo is None or hi is None:
-        return
-    ax.axvspan(-hi, -lo, facecolor="none", edgecolor=INK2, hatch="///", linewidth=0.0, alpha=0.25,
-               label=f"[min, max] ewidth = [{lo:g}, {hi:g}]")
+    (gap regions are judged over the whole window, independent of the bounds). A history entry
+    carries the bounds of that judgement (orbital rules re-derive them from the core levels)."""
+    if entry is not None and entry.get("orbital_bounds"):
+        lo, hi = entry["orbital_bounds"]
+    else:
+        lo, hi = parameters.get("min_ewidth"), parameters.get("max_ewidth")
+        lo = 1.0 if lo is None else lo
+        hi = 2.0 if hi is None else hi
+    left = -hi if hi is not None else ax.get_xlim()[0]
+    right = -lo if lo is not None else 0.0
+    ax.axvspan(left, right, facecolor="none", edgecolor=INK2, hatch="///", linewidth=0.0, alpha=0.25,
+               label=f"[min, max] ewidth = [{lo}, {hi}]")
+    window_bottom = ((entry or {}).get("window") or [-6.0, 1.0])[0]
+    for key, (level, star) in (entry or {}).get("orbital_levels", {}).items():
+        if level > window_bottom:
+            ax.axvline(level, color=INK2, linewidth=0.8, linestyle="--" if star else "-", alpha=0.7)
+            ax.text(level, 0.98, f"{key}{'*' if star else ''}", rotation=90, fontsize=7, color=INK2,
+                    ha="right", va="top", transform=ax.get_xaxis_transform())
 
 
 def plot_gaes(node, outdir, prefix):
@@ -268,7 +280,7 @@ def plot_gaes(node, outdir, prefix):
             ax.axvspan(a, b, color=SERIES[2], alpha=0.12)
         for a, b in h.get("fine_regions", []):
             ax.axvspan(a, b, color=SERIES[0], alpha=0.18)
-        _shade_ewidth_bounds(ax, node.outputs.parameters)
+        _shade_ewidth_bounds(ax, node.outputs.parameters, h)
         ax.axvline(-h["ewidth"], color=SERIES[3], linewidth=1.0, linestyle="-.", label="$-$ewidth of this go")
         if final is not None and abs(final - h["ewidth"]) > 1e-6:
             ax.axvline(-final, color=SERIES[1], linewidth=1.0, linestyle="--", label=f"$-$ewidth final ({final:.4f})")
@@ -286,7 +298,7 @@ def plot_gaes(node, outdir, prefix):
         written.append(path)
         ax_all.plot(energy, curve, linewidth=1.2, color=SERIES[k % len(SERIES)],
                     label=f"iew={h['iew']} ewidth={h['ewidth']:.4f} ({h['flag']})")
-    _shade_ewidth_bounds(ax_all, node.outputs.parameters)
+    _shade_ewidth_bounds(ax_all, node.outputs.parameters, history[-1] if history else None)
     if final is not None:
         ax_all.axvline(-final, color=INK, linewidth=1.0, linestyle="-.", label=f"$-$ewidth final ({final:.4f})")
     ax_all.set_yscale("log")

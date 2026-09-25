@@ -153,8 +153,8 @@ def submit_chain(structure_pk=None, preset=None, cif_path=None, modes=None, fspi
 
 
 def submit_gaes(structure_pk=None, preset=None, cif_path=None, comp=None, polytyp=None, lattice=None, magtype=None,
-                ewidth_init=None, method=None, dosth=None, dosth2=None, min_ewidth=None, max_ewidth=None, max_ew=None,
-                ewidth_dos=None, ref=None, parameters=None, code=None, displc=False, ncores=None, wallclock=None,
+                ewidth_init=None, method=None, dosth=None, dosth2=None, min_ewidth=None, max_ewidth=None, orbital=None,
+                max_ew=None, ewidth_dos=None, ref=None, parameters=None, code=None, displc=False, ncores=None, wallclock=None,
                 label=None, caller="cli"):
     from aiida import orm
     from aiida.engine import submit
@@ -179,6 +179,10 @@ def submit_gaes(structure_pk=None, preset=None, cif_path=None, comp=None, polyty
                                   ref=ref).items() if v is not None}
     if ref is None and "cnd" in code_node.label or ref is None and "cpa2021" in code_node.label:
         gaes["ref"] = 0.5
+    if orbital:
+        # "Rb4p=valence,Bi6s=core" (or a list): per-orbital rules deriving the ewidth range (section 15)
+        items = orbital if isinstance(orbital, (list, tuple)) else str(orbital).split(",")
+        gaes["orbitals"] = [it.strip() for it in items if it.strip()]
     inputs = dict(code=code_node, common=common, gaes=orm.Dict(dict=gaes), displc=orm.Bool(bool(displc)),
                   ncores=orm.Int(ncores or 8), wallclock=orm.Int(wallclock or 7200),
                   overrides=orm.Dict(dict=_overrides(parameters)),

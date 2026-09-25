@@ -213,17 +213,19 @@ def kkr_submit_gaes(structure_pk: int | None = None, preset: str | None = None, 
                     comp: str | None = None, polytyp: str | None = None, lattice: str | None = None,
                     magtype: str | None = None, ewidth_init: float | None = None, method: int | None = None,
                     dosth: float | None = None, dosth2: float | None = None, min_ewidth: float | None = None,
-                    max_ewidth: float | None = None, max_ew: int | None = None, ewidth_dos: float | None = None,
-                    ref: float | None = None, parameters: str | None = None, code: str | None = None,
+                    max_ewidth: float | None = None, orbital: str | None = None, max_ew: int | None = None,
+                    ewidth_dos: float | None = None, ref: float | None = None, parameters: str | None = None, code: str | None = None,
                     displc: bool = False, ncores: int | None = None, wallclock: int | None = None,
                     label: str | None = None) -> dict:
     """Submit a GAES WorkChain (gap-anchored ewidth search: go -> dos -> judge the DOS gap -> new ewidth, until
     E_F - ewidth lies in the gap between valence and semicore states). The system is a common-parameter Dict
     (structure_pk), a preset, a CIF, or a single-site CPA composition such as "AlSiRhBi" (comp, polytyp fcc/bcc).
+    orbital = comma separated per-orbital rules such as "Rb4p=valence,Bi6s=core" (aliases occupied / unoccupied):
+    the ewidth range is then derived from the core levels of each go instead of min_ewidth / max_ewidth.
     Returns the WorkChain pk; read the result with kkr_results and the figures with kkr_plot(gaes_pk=...)."""
     return run("submit-gaes", structure_pk=structure_pk, preset=preset, cif_path=cif_path, comp=comp, polytyp=polytyp,
                lattice=lattice, magtype=magtype, ewidth_init=ewidth_init, method=method, dosth=dosth, dosth2=dosth2,
-               min_ewidth=min_ewidth, max_ewidth=max_ewidth, max_ew=max_ew, ewidth_dos=ewidth_dos, ref=ref,
+               min_ewidth=min_ewidth, max_ewidth=max_ewidth, orbital=orbital, max_ew=max_ew, ewidth_dos=ewidth_dos, ref=ref,
                parameters=parameters, code=code, displc=displc, ncores=ncores, wallclock=wallclock, label=label)
 
 
