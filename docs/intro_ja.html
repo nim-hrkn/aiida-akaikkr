@@ -40,7 +40,7 @@ a{color:#2a4a7a}.meta{color:#52514e;font-size:.85em;margin-top:3em}
     <text x="445" y="86" font-weight="bold">aiida-akaikkr</text><text x="445" y="108" font-size="12" fill="#52514e">CalcJob / WorkChain / CLI</text>
     <text x="645" y="86">AiiDA</text><text x="645" y="108" font-size="12" fill="#52514e">来歴・投入・保存</text>
     <text x="860" y="86">計算機</text><text x="860" y="108" font-size="12" fill="#52514e">SLURM（local / ssh）で specx</text>
-    <text x="445" y="216" font-weight="bold">pyakaikkr</text><text x="445" y="238" font-size="12" fill="#52514e">入力生成・出力解析・図・GAES・レポート</text>
+    <text x="445" y="216" font-weight="bold">pyakaikkr</text><text x="445" y="238" font-size="12" fill="#52514e">inputcard 生成・out_*.log 解析・図・GAES・レポート</text>
     <text x="860" y="216">AkaiKKR (specx)</text><text x="860" y="238" font-size="12" fill="#52514e">go / dos / spc / jij / tc / cnd</text>
   </g>
   <g stroke="#52514e" stroke-width="1.6" fill="none" marker-end="url(#arr)" marker-start="url(#arr)">
@@ -51,14 +51,12 @@ a{color:#2a4a7a}.meta{color:#52514e;font-size:.85em;margin-top:3em}
   </g>
   <g stroke="#52514e" stroke-width="1.6" fill="none" marker-end="url(#arr)">
     <line x1="445" y1="124" x2="445" y2="190"/>
-    <line x1="530" y1="222" x2="760" y2="222"/>
-    <line x1="860" y1="190" x2="860" y2="124" stroke-dasharray="5 4"/>
+    <line x1="860" y1="124" x2="860" y2="190" stroke-dasharray="5 4"/>
   </g>
   <g font-size="12" fill="#52514e">
     <text x="455" y="162">入出力の処理を委ねる</text>
-    <text x="560" y="214">inputcard を書く / out_*.log を読む</text>
-    <text x="870" y="162">ジョブとして実行</text>
-    <text x="20" y="285">実線: 呼び出し、破線: 計算機上で specx が動く。人は左端の Claude にだけ話す。</text>
+    <text x="870" y="162">インストール済みの specx を実行</text>
+    <text x="20" y="285">実線: 呼び出し、破線: 計算機にあらかじめインストールされた specx をジョブとして実行する。人は左端の Claude にだけ話す。</text>
   </g>
 </svg>
 </div>
@@ -11340,7 +11338,6 @@ claude mcp add akaikkr -- /path/to/env/bin/akaikkr-mcp --allow-submit   # Claude
 <h2>知っておくこと</h2>
 <ul>
 <li>ewidth をわずかに変えるだけで SCF の収束の可否が反転することがあります。収束したことは積分路がギャップにある証拠にはならず、逆も同じです。判定は DOS で行います。</li>
-<li>混晶（CPA）の構造は pymatgen で扱います。ASE の Atoms は 1 サイト 1 元素なので部分占有は <code>atoms.info["occupancy"]</code>（CIF の読み込みで付く）にしか持てず、pymatgen → ASE の変換（<code>AseAtomsAdaptor.get_atoms</code>）は不規則構造を受け付けません（ValueError）。ASE 経路では CIF を <code>ase.io.read</code> するか <code>pyakaikkr.ase.set_occupancy</code> で占有を付けます。</li>
 <li>多原子胞ではギャップ判定の DOS を原子あたりに直します（既定）。1 原子の CPA 用に決めた閾値をそのまま使うためです。</li></ul>
 <p class="meta">aiida-akaikkr v1.0.0 / pyakaikkr v1.0.0（2026-09-26）。図は inline SVG（来歴図は AiiDA の graphviz 出力、その他は pyakaikkr.plot）。</p>
 </body></html>
