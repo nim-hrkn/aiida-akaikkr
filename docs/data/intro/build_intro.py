@@ -134,12 +134,10 @@ page.append(code("""# 環境（conda env akaikkr）: aiida-core 2.9、RabbitMQ�
 pip install -e AkaiKKRPythonUtil/library/PyAkaiKKR    # pyakaikkr
 pip install -e aiida-akaikkr                           # プラグイン（entry point akaikkr.*）
 verdi presto --profile-name akaikkr                    # プロファイル
-verdi computer setup ... / verdi code create ...       # 計算機と specx（docs/installation.md）
+verdi computer setup ... / verdi code create ...       # 計算機（SLURM、ssh）と specx の登録
 verdi daemon start
 akaikkr-aiida status                                   # 動作確認
 claude mcp add akaikkr -- /path/to/env/bin/akaikkr-mcp --allow-submit   # Claude に登録"""))
-page.append("""<p>詳しくは <a href="installation.md">installation.md</a>（環境、SLURM、ssh の計算機）、<a href="examples.md">examples.md</a>、
-<a href="mcp.md">mcp.md</a>、<a href="gaes_workchain.md">gaes_workchain.md</a>、<a href="report_spec.md">report_spec.md</a>。GAES の仕様は AkaiKKRPythonUtil/docs/ewidth_tuning_scheme.md。</p>""")
 
 page.append("<h2>知っておくこと</h2>")
 page.append("""<ul>

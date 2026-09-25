@@ -11333,12 +11333,10 @@ akaikkr-aiida report --pk 3799 --jij-pk 3887 --lang ja</code></pre>
 pip install -e AkaiKKRPythonUtil/library/PyAkaiKKR    # pyakaikkr
 pip install -e aiida-akaikkr                           # プラグイン（entry point akaikkr.*）
 verdi presto --profile-name akaikkr                    # プロファイル
-verdi computer setup ... / verdi code create ...       # 計算機と specx（docs/installation.md）
+verdi computer setup ... / verdi code create ...       # 計算機（SLURM、ssh）と specx の登録
 verdi daemon start
 akaikkr-aiida status                                   # 動作確認
 claude mcp add akaikkr -- /path/to/env/bin/akaikkr-mcp --allow-submit   # Claude に登録</code></pre>
-<p>詳しくは <a href="installation.md">installation.md</a>（環境、SLURM、ssh の計算機）、<a href="examples.md">examples.md</a>、
-<a href="mcp.md">mcp.md</a>、<a href="gaes_workchain.md">gaes_workchain.md</a>、<a href="report_spec.md">report_spec.md</a>。GAES の仕様は AkaiKKRPythonUtil/docs/ewidth_tuning_scheme.md。</p>
 <h2>知っておくこと</h2>
 <ul>
 <li>ewidth をわずかに変えるだけで SCF の収束の可否が反転することがあります。収束したことは積分路がギャップにある証拠にはならず、逆も同じです。判定は DOS で行います。</li>
