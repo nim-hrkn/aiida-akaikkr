@@ -28,6 +28,7 @@ GAES_DEFAULTS = {
     "max_ewidth": None,       # None = the defaults 1.0 / 2.0, which `orbitals` rules replace (section 15)
     "orbitals": [],           # per-orbital rules, e.g. ["Rb4p=valence", "Bi6s=core"] (occupied / unoccupied aliases)
     "ef_assumed": 0.6,        # Ry, E_F assumed with the atomic level table before the first go
+    "dos_per_atom": True,     # judge the DOS per atom (total DOS / natm); False = raw DOS per cell (2019). Plots keep per cell
     "max_ew": 10,             # maximum number of ewidth values tried
     "ewidth_dos": 3.0,        # Ry, dos window parameter (auto-widened so that the window reaches -ewidth-eth-ediff)
     "ewidth_dos_auto": True,
@@ -219,6 +220,11 @@ class AkaikkrGaesWorkChain(WorkChain):
 
         p = self.ctx.params
         energy, curve = _spin_sum(self.ctx.dos.outputs.dos)
+        natm = None
+        if p.get("dos_per_atom", True):
+            res = self.ctx.go.outputs.results.get_dict() if "results" in self.ctx.go.outputs else {}
+            natm = len(res.get("atom_names") or []) or int(self.inputs.common.get_dict().get("natm") or 1)
+            curve = curve / float(natm)
         try:
             bounds = self._bounds(self.ctx.levels_seen)
         except GaesError as e:
@@ -237,6 +243,7 @@ class AkaikkrGaesWorkChain(WorkChain):
         entry = {"iew": self.ctx.iew, "ewidth": self.ctx.ewidth, "converged": self.ctx.go_converged,
                  "orbital_bounds": bounds.as_list(), "orbital_levels": levels_as_dict(self.ctx.levels),
                  "orbital_mismatch": mismatch, "reasons": list(getattr(dec, "reasons", [])),
+                 "dos_unit": "per_atom" if natm else "per_cell", "natm": natm,
                  "flag": dec.flag, "ewidth_dos": self.ctx.ewidth_dos_used,
                  "window": [float(energy.min()), float(energy.max())],
                  "coarse_regions": [list(g.as_tuple()) for g in dec.coarse],

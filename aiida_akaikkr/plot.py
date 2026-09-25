@@ -284,8 +284,9 @@ def plot_gaes(node, outdir, prefix):
         ax.axvline(-h["ewidth"], color=SERIES[3], linewidth=1.0, linestyle="-.", label="$-$ewidth of this go")
         if final is not None and abs(final - h["ewidth"]) > 1e-6:
             ax.axvline(-final, color=SERIES[1], linewidth=1.0, linestyle="--", label=f"$-$ewidth final ({final:.4f})")
+        scale = h.get("natm") or 1   # thresholds are per atom; the plot keeps the DOS per cell
         for th, ls in ((node.outputs.parameters.get("dosth", 2e-2), "--"), (node.outputs.parameters.get("dosth2", 1e-3), ":")):
-            ax.axhline(th, color=INK2, linewidth=0.6, linestyle=ls)
+            ax.axhline(th * scale, color=INK2, linewidth=0.6, linestyle=ls)
         ax.set_yscale("log")
         ax.legend(frameon=False, fontsize=8)
         _style(ax, "$E - E_F$ (Ry)", "DOS (states/Ry, spin sum)",

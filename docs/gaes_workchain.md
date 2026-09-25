@@ -19,7 +19,7 @@ SCF が収束していなくても判定する（ewidth がギャップに無い
 |---|---|---|
 | code | Code | specx |
 | common | Dict | 構造 + パラメタ（`inputs.make_common_param` / `preset_common_param` / `single_site_common_param`） |
-| gaes | Dict | `GAES_DEFAULTS` の上書き: ewidth_init 1.2, method 2, dosth 2e-2, dosth2 1e-3, dosth2_relax 2, eth 0.30, ediff 0.20, margin 0.01, min_ewidth / max_ewidth None（= 1.0 / 2.0、`orbitals` があれば置き換え）, orbitals []（例 `["Rb4p=valence", "Bi6s=core"]`、別名 occupied / unoccupied）, ef_assumed 0.6, max_ew 10, ewidth_dos 3.0, ewidth_dos_auto True, ewidth_dos_max 4.5, ref 0.75, edelt_init 1e-4, edelt_dos 1e-4, maxitr 500, pmix 0.005 |
+| gaes | Dict | `GAES_DEFAULTS` の上書き: ewidth_init 1.2, method 2, dosth 2e-2, dosth2 1e-3, dosth2_relax 2, eth 0.30, ediff 0.20, margin 0.01, min_ewidth / max_ewidth None（= 1.0 / 2.0、`orbitals` があれば置き換え）, orbitals []（例 `["Rb4p=valence", "Bi6s=core"]`、別名 occupied / unoccupied）, ef_assumed 0.6, dos_per_atom True（判定は total DOS / natm。False で胞あたり。図の単位は変えない）, max_ew 10, ewidth_dos 3.0, ewidth_dos_auto True, ewidth_dos_max 4.5, ref 0.75, edelt_init 1e-4, edelt_dos 1e-4, maxitr 500, pmix 0.005 |
 | overrides | Dict | 全ジョブに掛ける AkaiKKR パラメタ（bzqlty、sdftyp、option など） |
 | displc, ncores, wallclock, label | | chain と同じ |
 
@@ -31,7 +31,7 @@ SCF が収束していなくても判定する（ewidth がギャップに無い
 |---|---|---|
 | ewidth | Float | 採用した ewidth（`finished`）、または最後に試した値 |
 | status | Str | `finished` / `ewidth_fail` / `ewidth_exhausted` / `not_converged` |
-| history | List | 判定ごとの dict: iew, ewidth, converged, flag（old / new / fail / window_limited）, ewidth_dos, window, coarse_regions, fine_regions, candidates, gap_used, relaxed, dosth2_used, orbital_bounds（この判定の [min, max]）, orbital_levels（`Rb4p: [E − E_F, star]`）, orbital_mismatch, reasons（fail のとき、区間ごとに候補が出なかった理由）, go_pk, dos_pk |
+| history | List | 判定ごとの dict: iew, ewidth, converged, flag（old / new / fail / window_limited）, ewidth_dos, window, coarse_regions, fine_regions, candidates, gap_used, relaxed, dosth2_used, orbital_bounds（この判定の [min, max]）, orbital_levels（`Rb4p: [E − E_F, star]`）, orbital_mismatch, reasons（fail のとき、区間ごとに候補が出なかった理由）, dos_unit（per_atom / per_cell）, natm, go_pk, dos_pk |
 | parameters | Dict | 実際に使った GAES パラメタ |
 | go.*, dos.* | | 最後の go / dos の出力（results, potential, structure, dos, pdos） |
 
