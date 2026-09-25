@@ -236,7 +236,7 @@ class AkaikkrGaesWorkChain(WorkChain):
             dec.gap_used = None
         entry = {"iew": self.ctx.iew, "ewidth": self.ctx.ewidth, "converged": self.ctx.go_converged,
                  "orbital_bounds": bounds.as_list(), "orbital_levels": levels_as_dict(self.ctx.levels),
-                 "orbital_mismatch": mismatch,
+                 "orbital_mismatch": mismatch, "reasons": list(getattr(dec, "reasons", [])),
                  "flag": dec.flag, "ewidth_dos": self.ctx.ewidth_dos_used,
                  "window": [float(energy.min()), float(energy.max())],
                  "coarse_regions": [list(g.as_tuple()) for g in dec.coarse],
@@ -269,6 +269,7 @@ class AkaikkrGaesWorkChain(WorkChain):
             return
         if dec.flag == "fail":
             self.ctx.status = "ewidth_fail"
+            self.report("ewidth_fail: " + ("; ".join(entry["reasons"]) or "no reason recorded"))
             return
         nxt = None
         for c in dec.candidates:

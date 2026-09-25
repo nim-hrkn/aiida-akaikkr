@@ -31,7 +31,7 @@ SCF が収束していなくても判定する（ewidth がギャップに無い
 |---|---|---|
 | ewidth | Float | 採用した ewidth（`finished`）、または最後に試した値 |
 | status | Str | `finished` / `ewidth_fail` / `ewidth_exhausted` / `not_converged` |
-| history | List | 判定ごとの dict: iew, ewidth, converged, flag（old / new / fail / window_limited）, ewidth_dos, window, coarse_regions, fine_regions, candidates, gap_used, relaxed, dosth2_used, orbital_bounds（この判定の [min, max]）, orbital_levels（`Rb4p: [E − E_F, star]`）, orbital_mismatch, go_pk, dos_pk |
+| history | List | 判定ごとの dict: iew, ewidth, converged, flag（old / new / fail / window_limited）, ewidth_dos, window, coarse_regions, fine_regions, candidates, gap_used, relaxed, dosth2_used, orbital_bounds（この判定の [min, max]）, orbital_levels（`Rb4p: [E − E_F, star]`）, orbital_mismatch, reasons（fail のとき、区間ごとに候補が出なかった理由）, go_pk, dos_pk |
 | parameters | Dict | 実際に使った GAES パラメタ |
 | go.*, dos.* | | 最後の go / dos の出力（results, potential, structure, dos, pdos） |
 
