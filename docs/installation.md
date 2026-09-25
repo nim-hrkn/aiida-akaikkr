@@ -112,7 +112,21 @@ verdi computer configure core.ssh_async mygardenx1-async -n --host mygardenx1 --
 verdi computer test mygardenx1-async        # 6 tests succeeded (2026-09-25)
 ```
 
-- 2026-09-25 時点で mygardenx1 には specx が置かれていない（/home/kino 以下に無し）。code を作る前に AkaiKKR の各ビルドを mygardenx1 に複写またはビルドし、`verdi code create core.code.installed --computer mygardenx1-async --filepath-executable <mygardenx1 上の specx>` で登録する。oneAPI は `/opt/intel/oneapi/setvars.sh` にある。
+- AkaiKKR 2022.0721 は mygardenx1 の `/home/kino/kino/kit/AkaiKKRprogram.2022.0721.ifort/` にインストール済み（2026-09-25）。code は mygardenx2 と同じ prepend text で 3 つ登録した:
+
+```bash
+B=/home/kino/kino/kit/AkaiKKRprogram.2022.0721.ifort
+for pair in "specx-akaikkr:akaikkr" "specx-cnd:akaikkr_cnd" "specx-cpa2021v01:akaikkr_cpa2021v01"; do
+  verdi code create core.code.installed -n --label ${pair%%:*} --computer mygardenx1-async \
+    --filepath-executable $B/${pair##*:}/specx --default-calc-job-plugin akaikkr.go \
+    --prepend-text 'source /opt/intel/oneapi/setvars.sh --force > /dev/null 2>&1
+ulimit -s unlimited
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}' --append-text ''
+done
+```
+
+  `specx-akaikkr@mygardenx1-async`（pk 3705）、`specx-cnd@mygardenx1-async`（3706）、`specx-cpa2021v01@mygardenx1-async`（3707）。
+- 制限: `--preset` の構造生成（`preset_common_param`）は code の実行ファイルのパスを**ローカルで**呼ぶため、リモートの code では `TypeError: 'NoneType' object does not support item assignment` で止まる（`make_common_param` が Excepted）。リモートで preset を使うには、ローカルの code で一度 `make_common_param` を作ってから `--structure-pk` で渡すか、`--comp`（単一サイト CPA、specx 不要）を使う。
 - `--max-io-allowed 8` は同時に開く ssh/sftp 接続の上限。
 
 ## 5. specx の code

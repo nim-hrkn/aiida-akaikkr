@@ -39,3 +39,7 @@ FeB1.95 は cnd の参照に無いので比較していません。
 - `record` の自動判定（`pyakaikkr.ase.AkaiKKR` にはある）。
 - forces / stress。AkaiKKR は出しません。
 - `example/run_go.ipynb` は古く未検証。
+
+## preset とリモート code（2026-09-25）
+
+`submit-chain --preset Cu --code specx-akaikkr@mygardenx1-async` は `make_common_param` が Excepted になる。`preset_common_param` が code の `filepath_executable` をローカルの specx として実行して構造を作るため、リモートの code ではパスが存在せず `_Cu_common_param` に `None` が渡る。回避: ローカル code で作った common Dict を `--structure-pk` で渡す、または `--comp` を使う。恒久対策は preset の構造生成をローカルの specx（設定値）で行うこと（未実装）。
