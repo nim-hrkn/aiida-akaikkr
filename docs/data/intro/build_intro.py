@@ -298,8 +298,8 @@ both('<p class="cap">「pk 3799 のレポートを日本語で作って」（<co
      '<p class="cap">The file obtained with "make the report of pk 3799 in English" (<code>kkr_report(pk=3799, jij_pk=3887, lang="en")</code>) is embedded as is.</p>')
 both('<div class="report">{}</div>'.format(report_body(REPORT_JA, "ja")), '<div class="report">{}</div>'.format(report_body(REPORT_EN, "en")))
 
-both('<p class="meta">aiida-akaikkr v1.0.0 / pyakaikkr v1.0.0（2026-09-26）。図は inline SVG（来歴図は AiiDA の graphviz 出力、その他は pyakaikkr.plot）。</p>',
-     '<p class="meta">aiida-akaikkr v1.0.0 / pyakaikkr v1.0.0 (2026-09-26). Figures are inline SVG (the provenance graph from AiiDA / graphviz, the rest from pyakaikkr.plot).</p>')
+both('<p class="meta">aiida-akaikkr v1.1.0 / pyakaikkr v1.1.0（2026-09-26）。図は inline SVG（来歴図は AiiDA の graphviz 出力、その他は pyakaikkr.plot）。</p>',
+     '<p class="meta">aiida-akaikkr v1.1.0 / pyakaikkr v1.1.0 (2026-09-26). Figures are inline SVG (the provenance graph from AiiDA / graphviz, the rest from pyakaikkr.plot).</p>')
 
 page = ['<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>aiida-akaikkr 入門 / Introduction</title>',
         "<style>{}</style><script>{}</script></head><body>".format(CSS, JS),

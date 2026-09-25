@@ -1,4 +1,4 @@
-# MCP と CLI の使い方（v0.3.0）
+# MCP と CLI の使い方（v0.3.0 で導入、v1.1.0 現在）
 
 設計は [mcp_design.md](mcp_design.md)。ここは使い方です。
 
