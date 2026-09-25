@@ -33,6 +33,7 @@ dependencies = [
 
 [project.entry-points."aiida.workflows"]
 "akaikkr.chain" = "aiida_akaikkr.workflows.chain:AkaikkrChainWorkChain"
+"akaikkr.gaes" = "aiida_akaikkr.workflows.gaes:AkaikkrGaesWorkChain"
 
 [project.optional-dependencies]
 mcp = ["mcp>=2.0"]

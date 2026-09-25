@@ -235,13 +235,71 @@ def plot_jij(node, outdir, prefix, csv=True):
     return written
 
 
-def plot_cli(dos_pk=None, spc_pk=None, jij_pk=None, outdir=None, prefix=None):
+def plot_gaes(node, outdir, prefix):
+    """DOS of every GAES iteration (one PNG each, plus an overview): coarse gap regions (green),
+    fine sub-regions (blue), -ewidth of that go (red) and the final ewidth (dashed)."""
+    import numpy as np
+
+    plt = _plt()
+    history = node.outputs.history.get_list()
+    final = node.outputs.ewidth.value if "ewidth" in node.outputs else None
+    status = node.outputs.status.value if "status" in node.outputs else "running"
+    written = []
+    fig_all, ax_all = plt.subplots(figsize=(8, 4.2))
+    for k, h in enumerate(history):
+        dos_node = load_node(h["dos_pk"])
+        energy = dos_node.outputs.dos.get_array("energy")
+        dos = np.asarray(dos_node.outputs.dos.get_array("dos"), dtype=float)
+        curve = dos.sum(axis=0) if dos.ndim == 2 else dos
+        fig, ax = plt.subplots(figsize=(8, 4.2))
+        ax.plot(energy, curve, color=SERIES[0], linewidth=1.4, label=f"total DOS, ewidth_go {h['ewidth']:.4f}")
+        for a, b in h.get("coarse_regions", []):
+            ax.axvspan(a, b, color=SERIES[2], alpha=0.12)
+        for a, b in h.get("fine_regions", []):
+            ax.axvspan(a, b, color=SERIES[0], alpha=0.18)
+        ax.axvline(-h["ewidth"], color=SERIES[3], linewidth=1.0, linestyle="-.", label="$-$ewidth of this go")
+        if final is not None and abs(final - h["ewidth"]) > 1e-6:
+            ax.axvline(-final, color=SERIES[1], linewidth=1.0, linestyle="--", label=f"$-$ewidth final ({final:.4f})")
+        for th, ls in ((node.outputs.parameters.get("dosth", 2e-2), "--"), (node.outputs.parameters.get("dosth2", 1e-3), ":")):
+            ax.axhline(th, color=INK2, linewidth=0.6, linestyle=ls)
+        ax.set_yscale("log")
+        ax.legend(frameon=False, fontsize=8)
+        _style(ax, "$E - E_F$ (Ry)", "DOS (states/Ry, spin sum)",
+               f"{prefix}: GAES iew={h['iew']} ewidth={h['ewidth']:.4f} -> {h['flag']}"
+               + (f" (next {h['candidates'][0]:.4f})" if h["flag"] == "new" and h["candidates"] else ""))
+        fig.tight_layout()
+        path = os.path.join(outdir, f"{prefix}_gaes{k:02d}_dos.png")
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+        written.append(path)
+        ax_all.plot(energy, curve, linewidth=1.2, color=SERIES[k % len(SERIES)],
+                    label=f"iew={h['iew']} ewidth={h['ewidth']:.4f} ({h['flag']})")
+    if final is not None:
+        ax_all.axvline(-final, color=INK, linewidth=1.0, linestyle="-.", label=f"$-$ewidth final ({final:.4f})")
+    ax_all.set_yscale("log")
+    ax_all.legend(frameon=False, fontsize=8)
+    _style(ax_all, "$E - E_F$ (Ry)", "DOS (states/Ry, spin sum)", f"{prefix}: GAES {status}")
+    fig_all.tight_layout()
+    path = os.path.join(outdir, f"{prefix}_gaes_all.png")
+    fig_all.savefig(path, dpi=150)
+    plt.close(fig_all)
+    written.append(path)
+    return written
+
+
+def load_node(pk):
     from aiida import orm
 
-    if not dos_pk and not spc_pk and not jij_pk:
-        raise ValueError("give --dos-pk, --spc-pk and/or --jij-pk")
+    return orm.load_node(int(pk))
+
+
+def plot_cli(dos_pk=None, spc_pk=None, jij_pk=None, gaes_pk=None, outdir=None, prefix=None):
+    from aiida import orm
+
+    if not dos_pk and not spc_pk and not jij_pk and not gaes_pk:
+        raise ValueError("give --dos-pk, --spc-pk, --jij-pk and/or --gaes-pk")
     written = []
-    first = orm.load_node(int(dos_pk or spc_pk or jij_pk))
+    first = orm.load_node(int(dos_pk or spc_pk or jij_pk or gaes_pk))
     outdir = outdir or os.path.join(os.path.expanduser("~"), "aiida_work", "figures", str(first.pk))
     os.makedirs(outdir, exist_ok=True)
     prefix = prefix or (first.label.rsplit("_", 1)[0] if first.label else f"pk{first.pk}")
@@ -259,4 +317,9 @@ def plot_cli(dos_pk=None, spc_pk=None, jij_pk=None, outdir=None, prefix=None):
         written += plot_awk(node, outdir, prefix)
     if jij_pk:
         written += plot_jij(orm.load_node(int(jij_pk)), outdir, prefix)
+    if gaes_pk:
+        node = orm.load_node(int(gaes_pk))
+        if "history" not in node.outputs:
+            raise ValueError(f"Node<{node.pk}> has no `history` output (is it a finished GAES WorkChain?)")
+        written += plot_gaes(node, outdir, prefix)
     return {"outdir": outdir, "prefix": prefix, "files": written}

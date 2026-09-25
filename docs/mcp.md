@@ -21,7 +21,7 @@ akaikkr-aiida [--json] [--profile NAME] <subcommand> [--option value ...]
 | 種別 | サブコマンド |
 |---|---|
 | read | status, codes, computer-test, daemon-status, presets, process, list, wait, results, dos, awk, jij, workdir, plot, compare, provenance |
-| submit | structure, submit-go, submit-followup, submit-chain |
+| submit | structure, submit-go, submit-followup, submit-chain, submit-gaes |
 | control | daemon-start, daemon-stop, kill |
 
 `--json` のとき stdout は JSON 1 個だけです。失敗も `{"ok": false, "error": ..., "hint": ...}` で返り、終了コードは 1。ライブラリの print（pymatgen の警告など）は stderr に回ります。

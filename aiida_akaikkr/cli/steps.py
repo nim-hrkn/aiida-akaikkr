@@ -150,3 +150,42 @@ def submit_chain(structure_pk=None, preset=None, cif_path=None, modes=None, fspi
     logdir.append_jsonl("action", {"action": "submit", "mode": "chain", "pk": node.pk, "modes": mode_list,
                                    "preset": preset, "caller": caller})
     return info
+
+
+def submit_gaes(structure_pk=None, preset=None, cif_path=None, comp=None, polytyp=None, lattice=None, magtype=None,
+                ewidth_init=None, method=None, dosth=None, dosth2=None, min_ewidth=None, max_ewidth=None, max_ew=None,
+                ewidth_dos=None, ref=None, parameters=None, code=None, displc=False, ncores=None, wallclock=None,
+                label=None, caller="cli"):
+    from aiida import orm
+    from aiida.engine import submit
+
+    from ..inputs import generic_common_param, preset_common_param, single_site_common_param
+    from ..workflows.gaes import AkaikkrGaesWorkChain
+
+    code_node = _load_code(code)
+    if structure_pk:
+        common = _node(structure_pk)
+    elif comp:
+        common = single_site_common_param(orm.Str(comp), orm.Str(polytyp or "fcc"), orm.Str(lattice or "expr"),
+                                          orm.Str(magtype or "mag"))
+    elif preset:
+        common = preset_common_param(preset, code_node, displc, cif_path=cif_path)
+    elif cif_path:
+        common = generic_common_param(cif_path, code_node, displc)
+    else:
+        raise ValueError("give --structure-pk, --comp, --preset or --cif-path")
+    gaes = {k: v for k, v in dict(ewidth_init=ewidth_init, method=method, dosth=dosth, dosth2=dosth2,
+                                  min_ewidth=min_ewidth, max_ewidth=max_ewidth, max_ew=max_ew, ewidth_dos=ewidth_dos,
+                                  ref=ref).items() if v is not None}
+    if ref is None and "cnd" in code_node.label or ref is None and "cpa2021" in code_node.label:
+        gaes["ref"] = 0.5
+    inputs = dict(code=code_node, common=common, gaes=orm.Dict(dict=gaes), displc=orm.Bool(bool(displc)),
+                  ncores=orm.Int(ncores or 8), wallclock=orm.Int(wallclock or 7200),
+                  overrides=orm.Dict(dict=_overrides(parameters)),
+                  label=orm.Str(label or comp or preset or "gaes"))
+    node = submit(AkaikkrGaesWorkChain, **inputs)
+    info = {"pk": node.pk, "process_label": node.process_label, "label": inputs["label"].value,
+            "code": code_node.full_label, "common_pk": common.pk, "gaes": gaes}
+    logdir.append_jsonl("action", {"action": "submit", "mode": "gaes", "pk": node.pk, "comp": comp, "preset": preset,
+                                   "caller": caller})
+    return info

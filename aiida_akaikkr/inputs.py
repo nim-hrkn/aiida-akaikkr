@@ -118,3 +118,18 @@ def summarize_common(node) -> dict:
     return {"pk": node.pk, "brvtyp": d.get("brvtyp"), "a": d.get("a"), "ntyp": d.get("ntyp"),
             "natm": d.get("natm"), "types": d.get("type"), "magtyp": d.get("magtyp"),
             "has_displc": "displc" in d}
+
+
+@calcfunction
+def single_site_common_param(comp: orm.Str, brvtyp: orm.Str, lattice: orm.Str, magtyp: orm.Str) -> orm.Dict:
+    """common-parameter Dict of a single-site CPA (one type, one atom) from a composition string
+    such as "Rh0.5Pt0.5" or "AlSiScTi" (equal fractions), with the 2019 HEA defaults of
+    pyakaikkr.gaes.make_single_site_param (a=1000000 for lattice "expr")."""
+    from pyakaikkr.gaes import SiteComposition, make_single_site_param
+
+    c = SiteComposition.from_type_name(comp.value)
+    lat = lattice.value
+    lat = lat if lat in ("expr", "mjw") else float(lat)
+    param = make_single_site_param(c, brvtyp.value, lattice=lat, magtyp=magtyp.value or "mag")
+    param.pop("go", None)
+    return orm.Dict(dict=param)

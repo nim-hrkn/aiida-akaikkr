@@ -27,7 +27,7 @@ TOOLS = {
     "kkr_jij": "jij", "kkr_workdir": "workdir", "kkr_plot": "plot", "kkr_compare_reference": "compare",
     "kkr_provenance": "provenance",
     "kkr_structure_from_cif": "structure", "kkr_submit_go": "submit-go",
-    "kkr_submit_followup": "submit-followup", "kkr_submit_chain": "submit-chain",
+    "kkr_submit_followup": "submit-followup", "kkr_submit_chain": "submit-chain", "kkr_submit_gaes": "submit-gaes",
     "kkr_daemon_start": "daemon-start", "kkr_daemon_stop": "daemon-stop", "kkr_kill": "kill",
 }
 
@@ -157,10 +157,11 @@ def kkr_workdir(pk: int, lines: int | None = None) -> dict:
     return run("workdir", pk=pk, lines=lines)
 
 
-def kkr_plot(dos_pk: int | None = None, spc_pk: int | None = None, jij_pk: int | None = None,
-             outdir: str | None = None, prefix: str | None = None) -> dict:
-    """Write DOS / PDOS / A(w,k) / J_ij(R) PNG files (and <prefix>_jij.csv) for dos / spc / jij CalcJobs; returns the file paths."""
-    return run("plot", dos_pk=dos_pk, spc_pk=spc_pk, jij_pk=jij_pk, outdir=outdir, prefix=prefix)
+def kkr_plot(dos_pk: int | None = None, gaes_pk: int | None = None, spc_pk: int | None = None,
+             jij_pk: int | None = None, outdir: str | None = None, prefix: str | None = None) -> dict:
+    """Write DOS / PDOS / A(w,k) / J_ij(R) PNG files (and <prefix>_jij.csv) for dos / spc / jij CalcJobs, or the DOS of
+    every iteration of a GAES WorkChain (gaes_pk) with its gap regions; returns the file paths."""
+    return run("plot", dos_pk=dos_pk, gaes_pk=gaes_pk, spc_pk=spc_pk, jij_pk=jij_pk, outdir=outdir, prefix=prefix)
 
 
 def kkr_compare_reference(reference_json: str, pks: str | None = None, result_json: str | None = None,
@@ -206,6 +207,24 @@ def kkr_submit_chain(structure_pk: int | None = None, preset: str | None = None,
     """Submit go followed by the given modes (comma separated) as one WorkChain; returns the WorkChain pk."""
     return run("submit-chain", structure_pk=structure_pk, preset=preset, cif_path=cif_path, modes=modes,
                fspin=fspin, code=code, displc=displc, ncores=ncores, wallclock=wallclock, label=label)
+
+
+def kkr_submit_gaes(structure_pk: int | None = None, preset: str | None = None, cif_path: str | None = None,
+                    comp: str | None = None, polytyp: str | None = None, lattice: str | None = None,
+                    magtype: str | None = None, ewidth_init: float | None = None, method: int | None = None,
+                    dosth: float | None = None, dosth2: float | None = None, min_ewidth: float | None = None,
+                    max_ewidth: float | None = None, max_ew: int | None = None, ewidth_dos: float | None = None,
+                    ref: float | None = None, parameters: str | None = None, code: str | None = None,
+                    displc: bool = False, ncores: int | None = None, wallclock: int | None = None,
+                    label: str | None = None) -> dict:
+    """Submit a GAES WorkChain (gap-anchored ewidth search: go -> dos -> judge the DOS gap -> new ewidth, until
+    E_F - ewidth lies in the gap between valence and semicore states). The system is a common-parameter Dict
+    (structure_pk), a preset, a CIF, or a single-site CPA composition such as "AlSiRhBi" (comp, polytyp fcc/bcc).
+    Returns the WorkChain pk; read the result with kkr_results and the figures with kkr_plot(gaes_pk=...)."""
+    return run("submit-gaes", structure_pk=structure_pk, preset=preset, cif_path=cif_path, comp=comp, polytyp=polytyp,
+               lattice=lattice, magtype=magtype, ewidth_init=ewidth_init, method=method, dosth=dosth, dosth2=dosth2,
+               min_ewidth=min_ewidth, max_ewidth=max_ewidth, max_ew=max_ew, ewidth_dos=ewidth_dos, ref=ref,
+               parameters=parameters, code=code, displc=displc, ncores=ncores, wallclock=wallclock, label=label)
 
 
 # ---------------------------------------------------------------- tools (CONTROL)

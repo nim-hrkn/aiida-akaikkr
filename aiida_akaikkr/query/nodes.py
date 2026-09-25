@@ -187,8 +187,26 @@ def wait(pk, wait_seconds=None):
             "exit_status": node.exit_status, "waited_seconds": round(time.time() - t0, 1)}
 
 
+def _is_gaes(node):
+    return (node.process_label or "") == "AkaikkrGaesWorkChain"
+
+
 def results(pk):
     node = _node(pk)
+    if _is_gaes(node):
+        out = {"pk": node.pk, "label": node.label, "process_label": node.process_label,
+               "state": node.process_state.value, "exit_status": node.exit_status}
+        for port in ("ewidth", "status"):
+            if port in node.outputs:
+                out[port] = node.outputs[port].value
+        if "history" in node.outputs:
+            out["history"] = node.outputs.history.get_list()
+        if "parameters" in node.outputs:
+            out["parameters"] = node.outputs.parameters.get_dict()
+        for child in node.called:
+            if _is_specx(child) and child.label.endswith("_go") and child.is_finished:
+                out.setdefault("go", {})[child.label] = _results_summary(child)
+        return out
     if _is_chain(node):
         out = {"pk": node.pk, "label": node.label, "process_label": node.process_label,
                "state": node.process_state.value, "exit_status": node.exit_status, "modes": {}}
