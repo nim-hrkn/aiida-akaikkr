@@ -144,8 +144,7 @@ page.append("""<p>詳しくは <a href="installation.md">installation.md</a>（�
 page.append("<h2>知っておくこと</h2>")
 page.append("""<ul>
 <li>ewidth をわずかに変えるだけで SCF の収束の可否が反転することがあります。収束したことは積分路がギャップにある証拠にはならず、逆も同じです。判定は DOS で行います。</li>
-<li>2022.0721 の akaikkr ビルドは Hf を含む go が reconf で止まります。cpa2021v01 ビルドを使います。Hf の 4f は積分路の下端に張り付く性質があり、ewidth 0.9 付近しか収束しません。</li>
-<li>混晶（CPA）の構造は pymatgen で扱います（ASE は部分占有を受け付けません）。</li>
+<li>混晶（CPA）の構造は pymatgen で扱います。ASE の Atoms は 1 サイト 1 元素なので部分占有は <code>atoms.info["occupancy"]</code>（CIF の読み込みで付く）にしか持てず、pymatgen → ASE の変換（<code>AseAtomsAdaptor.get_atoms</code>）は不規則構造を受け付けません（ValueError）。ASE 経路では CIF を <code>ase.io.read</code> するか <code>pyakaikkr.ase.set_occupancy</code> で占有を付けます。</li>
 <li>多原子胞ではギャップ判定の DOS を原子あたりに直します（既定）。1 原子の CPA 用に決めた閾値をそのまま使うためです。</li></ul>""")
 page.append('<p class="meta">aiida-akaikkr v1.0.0 / pyakaikkr v1.0.0（2026-09-26）。図は inline SVG（来歴図は AiiDA の graphviz 出力、その他は pyakaikkr.plot）。</p>')
 page.append("</body></html>")
