@@ -235,9 +235,20 @@ def plot_jij(node, outdir, prefix, csv=True):
     return written
 
 
+def _shade_ewidth_bounds(ax, parameters):
+    """hatch the band E_F - max_ewidth .. E_F - min_ewidth: the ewidth may only be chosen inside it
+    (gap regions are judged over the whole window, independent of the bounds)."""
+    lo, hi = parameters.get("min_ewidth"), parameters.get("max_ewidth")
+    if lo is None or hi is None:
+        return
+    ax.axvspan(-hi, -lo, facecolor="none", edgecolor=INK2, hatch="///", linewidth=0.0, alpha=0.25,
+               label=f"[min, max] ewidth = [{lo:g}, {hi:g}]")
+
+
 def plot_gaes(node, outdir, prefix):
     """DOS of every GAES iteration (one PNG each, plus an overview): coarse gap regions (green),
-    fine sub-regions (blue), -ewidth of that go (red) and the final ewidth (dashed)."""
+    fine sub-regions (blue), the [min_ewidth, max_ewidth] band (hatched), -ewidth of that go (red)
+    and the final ewidth (dashed)."""
     import numpy as np
 
     plt = _plt()
@@ -257,6 +268,7 @@ def plot_gaes(node, outdir, prefix):
             ax.axvspan(a, b, color=SERIES[2], alpha=0.12)
         for a, b in h.get("fine_regions", []):
             ax.axvspan(a, b, color=SERIES[0], alpha=0.18)
+        _shade_ewidth_bounds(ax, node.outputs.parameters)
         ax.axvline(-h["ewidth"], color=SERIES[3], linewidth=1.0, linestyle="-.", label="$-$ewidth of this go")
         if final is not None and abs(final - h["ewidth"]) > 1e-6:
             ax.axvline(-final, color=SERIES[1], linewidth=1.0, linestyle="--", label=f"$-$ewidth final ({final:.4f})")
@@ -274,6 +286,7 @@ def plot_gaes(node, outdir, prefix):
         written.append(path)
         ax_all.plot(energy, curve, linewidth=1.2, color=SERIES[k % len(SERIES)],
                     label=f"iew={h['iew']} ewidth={h['ewidth']:.4f} ({h['flag']})")
+    _shade_ewidth_bounds(ax_all, node.outputs.parameters)
     if final is not None:
         ax_all.axvline(-final, color=INK, linewidth=1.0, linestyle="-.", label=f"$-$ewidth final ({final:.4f})")
     ax_all.set_yscale("log")

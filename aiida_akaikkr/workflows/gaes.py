@@ -23,7 +23,8 @@ GAES_DEFAULTS = {
     "eth": 0.30,              # Ry, minimum gap width
     "ediff": 0.20,            # Ry, margin below the upper edge of the gap
     "margin": 0.01,           # Ry, extra margin of a new ewidth
-    "min_ewidth": 1.0,        # Ry, candidates outside [min, max] are dropped
+    "min_ewidth": 1.0,        # Ry, ewidth is chosen inside [min, max] (moved to the bound); gap regions
+                              # themselves are judged over the whole dos window, independent of the bounds
     "max_ewidth": 2.0,
     "max_ew": 10,             # maximum number of ewidth values tried
     "ewidth_dos": 3.0,        # Ry, dos window parameter (auto-widened so that the window reaches -ewidth-eth-ediff)

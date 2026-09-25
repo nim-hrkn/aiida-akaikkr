@@ -8,7 +8,7 @@ go の `ewidth`（積分路の下端 E_F − ewidth）が、valence 帯と semic
 
 1. `go`（新しいポテンシャルから、`record=init`、edelt 1e-4、maxitr 500、pmix 0.005）
 2. `dos`（go のポテンシャルから、edelt 1e-4 固定、窓 `ewidth_dos` は E_F − ewidth − eth − ediff まで届くよう自動で広げる、上限 4.5 Ry）
-3. 判定（Method 2 既定: 粗い threshold 2e-2 で幅 0.3 Ry 以上の区間、その中の細かい threshold 1e-3 の部分区間に、valence 帯の底から 0.2 Ry の余裕を取って ewidth を置く）。`old` なら終了、`new` なら次の ewidth（1.0〜2.0 Ry の範囲）、`fail` なら終了。
+3. 判定（Method 2 既定: 粗い threshold 2e-2 で幅 0.3 Ry 以上の区間、その中の細かい threshold 1e-3 の部分区間に、valence 帯の底から 0.2 Ry の余裕を取って ewidth を置く）。ギャップ区間の判定は dos の窓全体で行い、`min_ewidth` / `max_ewidth` には依らない。範囲 [min_ewidth, max_ewidth]（既定 1.0〜2.0 Ry）は ewidth を選ぶときだけ使い、範囲外の候補は端へ寄せる。`old` なら終了、`new` なら次の ewidth、`fail` なら終了。
 4. 低 DOS 区間が dos の窓の下端に接するときは、go を回さず窓を 1.5 倍にして dos だけ取り直す（最大 3 回）。
 
 SCF が収束していなくても判定する（ewidth がギャップに無いこと自体が収束を妨げるため）。この版には edelt / pmix を落として SCF を追い込む STEP2 は無い。
@@ -44,7 +44,7 @@ akaikkr-aiida submit-gaes --comp AlSiRhBi --polytyp fcc --code specx-akaikkr@myg
 akaikkr-aiida submit-gaes --preset Cu --code specx-akaikkr@mygardenx2-slurm --ewidth-init 1.6
 akaikkr-aiida submit-gaes --structure-pk 2866 --code ... --method 1 --dosth 2e-2
 akaikkr-aiida results --pk <wc pk>              # ewidth, status, history, 各 go の要約
-akaikkr-aiida plot --gaes-pk <wc pk>             # 反復ごとの DOS（緑: 粗い区間、青: 細かい区間、赤: その go の -ewidth）と重ね描き
+akaikkr-aiida plot --gaes-pk <wc pk>             # 反復ごとの DOS（緑: 粗い区間、青: 細かい区間、斜線: [min_ewidth, max_ewidth] の帯、赤: その go の -ewidth）と重ね描き
 ```
 
 MCP: `kkr_submit_gaes(comp="AlSiRhBi", polytyp="fcc", code="...")`, `kkr_results(pk)`, `kkr_plot(gaes_pk=...)`。
