@@ -96,6 +96,25 @@ verdi computer test mygardenx2-slurm
 - 既定メモリは設定していません。必要なら `metadata.options.max_memory_kb` で指定します。
 - このノードには slurmdbd が無いため、各ジョブに「could not parse scheduler output: detailed_job_info」という警告が付きますが無害です。
 
+### 4.1 mygardenx1（ssh、core.ssh_async）
+
+mygardenx1（64 コア、SLURM partition debug、1 ノード）を ssh 越しに使う computer。鍵認証でパスワード無しに入れることが前提（`ssh mygardenx1 hostname` が通ること）。transport は `core.ssh_async`（AiiDA 2.6 以降、openssh バックエンド）。
+
+```bash
+verdi computer setup -n --label mygardenx1-async --hostname mygardenx1 \
+  --description "mygardenx1 over ssh (core.ssh_async), SLURM (1 node, 64 cores, partition debug)" \
+  --transport core.ssh_async --scheduler core.slurm \
+  --work-dir '/home/kino/aiida_work/{username}' --mpirun-command "" \
+  --mpiprocs-per-machine 64 --shebang '#!/bin/bash' \
+  --prepend-text 'export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}' --append-text ''
+verdi computer configure core.ssh_async mygardenx1-async -n --host mygardenx1 --backend openssh \
+  --use-login-shell --safe-interval 5 --max-io-allowed 8
+verdi computer test mygardenx1-async        # 6 tests succeeded (2026-09-25)
+```
+
+- 2026-09-25 時点で mygardenx1 には specx が置かれていない（/home/kino 以下に無し）。code を作る前に AkaiKKR の各ビルドを mygardenx1 に複写またはビルドし、`verdi code create core.code.installed --computer mygardenx1-async --filepath-executable <mygardenx1 上の specx>` で登録する。oneAPI は `/opt/intel/oneapi/setvars.sh` にある。
+- `--max-io-allowed 8` は同時に開く ssh/sftp 接続の上限。
+
 ## 5. specx の code
 
 3 種類のビルドを別々の code にしてあります。
