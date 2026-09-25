@@ -1,4 +1,4 @@
-"""assemble docs/intro_ja.html: beginner's introduction to aiida-akaikkr, one self-contained file, Japanese and
+"""assemble docs/intro.html: beginner's introduction to aiida-akaikkr, one self-contained file, Japanese and
 English selectable with a switch at the top (the choice is remembered in the browser), table of contents,
 inline SVG figures, the SmCo5 report appended at the end.
 
@@ -14,8 +14,9 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.normpath(os.path.join(HERE, "..", "..", "intro_ja.html"))
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.normpath(os.path.join(HERE, "..", "..", "intro.html"))
 REPORT_JA = os.path.normpath(os.path.join(HERE, "..", "report_SmCo5_gaes_ja.html"))
+REPORT_EN = os.path.normpath(os.path.join(HERE, "..", "report_SmCo5_gaes_en.html"))
 EX = json.load(open(os.path.join(HERE, "smco5_example.json"), encoding="utf-8")) if os.path.exists(os.path.join(HERE, "smco5_example.json")) else {}
 
 ARCH_EN = {"LLM（人が日本語で指示）": "LLM (the person gives instructions)", "来歴・投入・保存": "provenance, submission, storage",
@@ -287,12 +288,15 @@ concentration, comparable to the threshold, and is missed. Reading the DOS per c
 
 # appendix: the report
 h2("appendix", "付録: SmCo5 のレポート（利点 4 の例の出力）", "Appendix: the SmCo5 report (output of the example of benefit 4)")
-rep = open(REPORT_JA, encoding="utf-8").read()
-body = re.search(r"<body>(.*)</body>", rep, re.S).group(1)
-body = body.replace("<h1>", "<h1>").replace('id="', 'id="rep-')      # keep figure ids unique
-both('<p class="cap">「pk 3799 のレポートを日本語で作って」で得られたファイルをそのまま載せています（GAES pk 3799 + jij pk 3887、日本語版）。</p>',
-     '<p class="cap">The file obtained with "make the report of pk 3799 in Japanese" is embedded as is (GAES pk 3799 + jij pk 3887, Japanese version).</p>')
-shared('<div class="report">{}</div>'.format(body))
+def report_body(path, tag):
+    rep = open(path, encoding="utf-8").read()
+    body = re.search(r"<body>(.*)</body>", rep, re.S).group(1)
+    return body.replace('id="', 'id="rep-{}-'.format(tag)).replace('href="#', 'href="#rep-{}-'.format(tag))     # keep ids unique
+
+
+both('<p class="cap">「pk 3799 のレポートを日本語で作って」（<code>kkr_report(pk=3799, jij_pk=3887, lang="ja")</code>）で得られたファイルをそのまま載せています。</p>',
+     '<p class="cap">The file obtained with "make the report of pk 3799 in English" (<code>kkr_report(pk=3799, jij_pk=3887, lang="en")</code>) is embedded as is.</p>')
+both('<div class="report">{}</div>'.format(report_body(REPORT_JA, "ja")), '<div class="report">{}</div>'.format(report_body(REPORT_EN, "en")))
 
 both('<p class="meta">aiida-akaikkr v1.0.0 / pyakaikkr v1.0.0（2026-09-26）。図は inline SVG（来歴図は AiiDA の graphviz 出力、その他は pyakaikkr.plot）。</p>',
      '<p class="meta">aiida-akaikkr v1.0.0 / pyakaikkr v1.0.0 (2026-09-26). Figures are inline SVG (the provenance graph from AiiDA / graphviz, the rest from pyakaikkr.plot).</p>')
