@@ -8,7 +8,7 @@ AkaiKKR（specx）を AiiDA から実行するプラグインの説明です。2
 | [calcjobs.md](calcjobs.md) | CalcJob（go / fsm / dos / jij / tc / spc / cnd）の入力・出力・exit code、パーサーの挙動と制限 |
 | [examples.md](examples.md) | `example/` のスクリプト（単発実行、テストセット一括実行、図の出力、参照値との比較、provenance graph） |
 | [dos_ewidth_from_go_spec.md](dos_ewidth_from_go_spec.md) | 仕様書 | dos で go の ewidth を使う: 図の線は go の ewidth だけ（辿れなければ描かない）、dos の ewidth を go の ewidth から決める（既定 2·ewidth_go）、parser が begin_option と実効 mesh を results に残す（2026-09-25、未実装） |
-| [report_spec.md](report_spec.md) | 仕様書 | MCP / CLI から図と要約を 1 枚の HTML にする `report`（式、CIF / POSCAR / preset、空間群、全エネルギー、モーメント、電荷、DOS / A(w,k) / Jij / GAES の図、cnd）。図は PNG + SVG（A(w,k) のメッシュは rasterize）。pyakaikkr.plot / pyakaikkr.report と aiida_akaikkr.report の関数設計 |
+| [report_spec.md](report_spec.md) | 仕様書（実装済み） | MCP / CLI から図と要約を 1 枚の HTML にする `report`（式、CIF / POSCAR / preset、空間群、全エネルギー、モーメント、電荷、DOS / A(w,k) / Jij / GAES の図、cnd）。図は PNG + SVG（A(w,k) のメッシュは rasterize）。pyakaikkr.plot / pyakaikkr.report と aiida_akaikkr.report の関数設計 |
 | [gaes_workchain.md](gaes_workchain.md) | 使い方（テスト `tests/test_gaes.py`） | `AkaikkrGaesWorkChain`（go → dos → ギャップ判定 → 新 ewidth の反復で go の ewidth を自動決定）、CLI `submit-gaes` / `plot --gaes-pk`、MCP `kkr_submit_gaes` |
 | [ewidth.md](ewidth.md) | go と dos の ewidth の意味の違い（go は [E_F − ewidth, E_F] を積分、dos は [E_F − ref·ewidth, E_F + (1 − ref)·ewidth] を描く）、ref のビルド差と `cemesr_ref=`、EW / EZ |
 | [known_issues.md](known_issues.md) | 既知の問題と参照値との差 |
@@ -22,6 +22,7 @@ conda activate akaikkr
 verdi status                       # profile / broker / daemon が ✔ であること
 cd aiida-akaikkr
 python example/run_cu_go_dos_spc.py --code specx-akaikkr@mygardenx2-slurm
+akaikkr-aiida report --pk <chain / gaes / go pk> [--lang ja] [--embed png] [--outdir DIR]   # HTML レポート（MCP: kkr_report）
 python example/plot_results.py --dos <dos pk> --spc <spc pk> [--jij <j3.0 pk>] --outdir example/figures --prefix Cu
 ```
 

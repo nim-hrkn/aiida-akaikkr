@@ -1,4 +1,4 @@
-# HTML レポート（仕様、2026-09-26）
+# HTML レポート（仕様、2026-09-26。実装済み: pyakaikkr.report / kkr-report、aiida_akaikkr.report / `akaikkr-aiida report` / MCP `kkr_report`）
 
 対象: aiida-akaikkr の MCP / CLI から、1 つの計算（go とその後続 dos / spc / jij / cnd、または GAES）の **図と要約を 1 枚の HTML** にして返す。図の描画と HTML の組み立ては pyakaikkr に置き（ファイルからでも AiiDA のノードからでも同じ関数で作れるように）、aiida-akaikkr はノードから材料を集めて渡すだけにする。`pyakaikkr.plot`（配列を受ける「plot 関数 A」）と同じ分担。
 
@@ -9,6 +9,10 @@
 - 線の図（DOS、PDOS、Jij、GAES）は vector のまま。DOS 201 点 × 数本なら 1 図 50〜100 KB。
 - HTML は **自己完結の 1 ファイル**（SVG は inline、PNG を選んだときは data URI）。MCP はパスを返すだけで済み、コピーしても図が欠けない。
 - 既定の埋め込みは SVG。`embed="png"` で PNG の data URI に切り替えられる（SVG が重い環境用）。
+
+## 0.1 言語
+
+HTML は英語（`lang="en"`、既定）と日本語（`lang="ja"`）を選べる。文言は `pyakaikkr.report.T` の辞書（両言語で同じキー）。`<html lang>` も付ける。CLI / MCP の `lang` 引数。
 
 ## 1. pyakaikkr 側
 
@@ -162,3 +166,11 @@ akaikkr-aiida report --pk <pk> [--dos-pk --spc-pk --jij-pk --cnd-pk --gaes-pk] [
 2. `pyakaikkr.report`（dataclass、`symmetry_of` / `formula_of`、`add_*`、`render_html`、`report_from_directory`、`kkr-report`）。
 3. `aiida_akaikkr.report`（`collect_report_data`、`write_report`）、`cli/spec.py` に `report`、MCP、docs。
 4. テストと、Cu / FeRh0.5Pt0.5 / GAES の見本 HTML を `docs/data/` に置く。
+
+## 5. 見本（2026-09-26）
+
+- `docs/data/report_FeRh05Pt05_aiida_{en,ja}.html`: go pk 2682（FeRh0.5Pt0.5、mygardenx2）と potential のリンクで見つかる dos / spc / jij / cnd。出典は CIF `FeRh0.5Pt0.5.cif` と preset `FeRh05Pt05`（`split_param` ← `make_common_param` を遡る）。Tc 217.2 K、抵抗率 12.46。
+- `docs/data/report_Cu_gaes_aiida_ja.html`: GAES WorkChain pk 3730（Cu 単一サイト CPA、mygardenx1）。GAES の節と図付き。
+- pyakaikkr 単体（testrun の出力から）: AkaiKKRPythonUtil/docs/data/report_FeRh05Pt05_{en,ja}.html、report_SmCo5_oc_ja.html。
+
+テスト: pyakaikkr `tests/plot/test_report.py`（7 件）、aiida-akaikkr `tests/test_report.py`（3 件。既存の chain があればレポートを作る）。

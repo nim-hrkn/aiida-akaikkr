@@ -25,7 +25,7 @@ TOOLS = {
     "kkr_daemon_status": "daemon-status", "kkr_presets": "presets", "kkr_process": "process",
     "kkr_list": "list", "kkr_wait": "wait", "kkr_results": "results", "kkr_dos": "dos", "kkr_awk": "awk",
     "kkr_jij": "jij", "kkr_workdir": "workdir", "kkr_plot": "plot", "kkr_compare_reference": "compare",
-    "kkr_provenance": "provenance",
+    "kkr_provenance": "provenance", "kkr_report": "report",
     "kkr_structure_from_cif": "structure", "kkr_submit_go": "submit-go",
     "kkr_submit_followup": "submit-followup", "kkr_submit_chain": "submit-chain", "kkr_submit_gaes": "submit-gaes",
     "kkr_daemon_start": "daemon-start", "kkr_daemon_stop": "daemon-stop", "kkr_kill": "kill",
@@ -162,6 +162,18 @@ def kkr_plot(dos_pk: int | None = None, gaes_pk: int | None = None, spc_pk: int 
     """Write DOS / PDOS / A(w,k) / J_ij(R) PNG files (and <prefix>_jij.csv) for dos / spc / jij CalcJobs, or the DOS of
     every iteration of a GAES WorkChain (gaes_pk) with its gap regions; returns the file paths."""
     return run("plot", dos_pk=dos_pk, gaes_pk=gaes_pk, spc_pk=spc_pk, jij_pk=jij_pk, outdir=outdir, prefix=prefix)
+
+
+def kkr_report(pk: int, lang: str | None = None, embed: str | None = None, dos_pk: int | None = None, spc_pk: int | None = None,
+               jij_pk: int | None = None, cnd_pk: int | None = None, gaes_pk: int | None = None, outdir: str | None = None,
+               prefix: str | None = None) -> dict:
+    """Write a self-contained HTML report of a calculation: formula, structure source (CIF / POSCAR / preset), space group,
+    lattice, calculation parameters, SCF results (E_F, total energy, total moment), moments and charges per component,
+    figures (DOS, PDOS, A(w,k), J_ij with Tc, GAES) and cnd values. `pk` is a chain WorkChain, a GAES WorkChain or a go
+    CalcJob (follow-ups are found through its potential); explicit dos_pk / spc_pk / jij_pk / cnd_pk / gaes_pk override.
+    lang "en" (default) or "ja"; embed "svg" (inline, default) or "png". Returns the HTML path, the figure files and a summary."""
+    return run("report", pk=pk, lang=lang, embed=embed, dos_pk=dos_pk, spc_pk=spc_pk, jij_pk=jij_pk, cnd_pk=cnd_pk, gaes_pk=gaes_pk,
+               outdir=outdir, prefix=prefix)
 
 
 def kkr_compare_reference(reference_json: str, pks: str | None = None, result_json: str | None = None,
