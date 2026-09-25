@@ -127,7 +127,8 @@ done
 
   `specx-akaikkr@mygardenx1-async`（pk 3705）、`specx-cnd@mygardenx1-async`（3706）、`specx-cpa2021v01@mygardenx1-async`（3707）。
 - `--preset` / CIF の構造生成（`make_common_param`）は specx を geometry モードで**ローカル**（daemon のホスト）で一度実行する。code がリモートのときは `inputs.local_specx_for` がローカルの specx を探す（code のパス → 環境変数 `AKAIKKR_LOCAL_SPECX` → 同じラベルの core.local の code）。mygardenx2 に同名の code があるので、そのまま使える。
-- mygardenx1 の SLURM ノードは 2026-07-29 から drained（RealMemory の設定が実測より大きい）。root で slurm.conf を直して resume するまでジョブは PENDING（docs/known_issues.md）。
+- mygardenx1 の SLURM ノードは 2026-07-29 から drained だった（RealMemory の設定 386470 > 実測 386444）。2026-09-25 に root で slurm.conf を直して resume し、idle に戻った（docs/known_issues.md）。
+- 動作確認（2026-09-25）: `akaikkr-aiida submit-gaes --comp Cu --polytyp fcc --code specx-akaikkr@mygardenx1-async --ncores 8` → WorkChain pk 3730 Finished [0]、go pk 3743 は SLURM job 12365 として mygardenx1 の `/home/kino/aiida_work/kino/f2/d2/b11a-.../` で実行（E_F 0.635 Ry、te −3309.959 Ry、収束）、dos pk 3776。GAES は ewidth 1.2 で old（Cu は semicore が無く、valence 帯の底 −0.70 Ry 以下が空）。図 `~/aiida_work/figures/gaes_mygardenx1/pk3730_gaes00_dos.png`。preset（`--preset Cu`）の構造生成も mygardenx1 の code で Finished [0]（`local_specx_for` がローカルの specx を使う）。
 - `--max-io-allowed 8` は同時に開く ssh/sftp 接続の上限。
 
 ## 5. specx の code

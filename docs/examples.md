@@ -91,3 +91,14 @@ Graphviz の `dot` は conda-forge から入れました（`mamba install -n aka
 ## 6. run_go.ipynb
 
 2022 年の notebook です。`tools.aiida_support.wait_for_node_finished` と `get_kkr_struc_from_cif` を Str のパスで呼ぶ古い書き方で、現行環境では未検証です。上のスクリプトを参照してください。
+
+## mygardenx1（ssh_async）での実行例（2026-09-25）
+
+```
+akaikkr-aiida submit-gaes --comp Cu --polytyp fcc --code specx-akaikkr@mygardenx1-async --ncores 8 --label Cu_x1_gaes   # pk 3730
+akaikkr-aiida results --pk 3730
+akaikkr-aiida plot --gaes-pk 3730 --outdir ~/aiida_work/figures/gaes_mygardenx1
+akaikkr-aiida submit-chain --preset Cu --modes dos --code specx-akaikkr@mygardenx1-async --ncores 8       # preset も可（構造生成はローカルの specx）
+```
+
+`--modes` は go の後続（dos, spc, tc, jij, fsm, cnd）だけを書く。`--modes go` は 410（未知モード）。
