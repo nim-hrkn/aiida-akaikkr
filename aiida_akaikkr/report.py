@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """HTML report of an aiida-akaikkr calculation (chain WorkChain, GAES WorkChain or a go CalcJob and its
 follow-ups): the material is collected from the nodes and handed to pyakaikkr.report, which draws the
 figures (pyakaikkr.plot, SVG + PNG) and renders the page in English or Japanese (docs/report_spec.md)."""

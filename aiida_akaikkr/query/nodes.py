@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """Read-only queries over the AiiDA database (aiida imported lazily)."""
 import datetime
 import os

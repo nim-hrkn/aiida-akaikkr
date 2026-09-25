@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """AkaikkrChainWorkChain: go, then the requested follow-up modes from its potential."""
 from aiida import orm
 from aiida.engine import ToContext, WorkChain

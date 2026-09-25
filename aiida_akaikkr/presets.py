@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """Material presets (the AkaiKKRPythonUtil test set) and the mode table.
 
 No aiida import here: this module is read by the CLI spec and by the MCP server.

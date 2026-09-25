@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """Control-side implementations (daemon start/stop, kill). Every action that does something is logged."""
 from .. import logdir
 

@@ -111,4 +111,5 @@ See `docs/mcp.md` for the tool list, wiring into Claude Code / Claude Desktop an
 
 ## License
 
-Apache-2.0 (see `LICENSE`).
+Copyright (c) 2022-2026 Hiori Kino.
+Distributed under the terms of the Apache License, Version 2.0 (see `LICENSE`).

@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """Shared input construction: common parameters from a CIF, split into structure/parameters, builders.
 
 Used by cli/steps.py and workflows/chain.py. Imports aiida at module level, so do not import

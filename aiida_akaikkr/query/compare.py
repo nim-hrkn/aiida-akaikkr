@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """Compare results with an AkaiKKRPythonUtil reference JSON (tests/<set>/reference/ifort.json)."""
 import json
 

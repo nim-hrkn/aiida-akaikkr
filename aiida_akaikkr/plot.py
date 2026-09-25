@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """DOS / PDOS / A(w,k) / J_ij / GAES figures from finished aiida-akaikkr nodes.
 
 The drawing itself is done by ``pyakaikkr.plot`` (the array-based "plot function A" shared with

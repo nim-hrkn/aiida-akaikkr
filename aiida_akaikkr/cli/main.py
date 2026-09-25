@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """`akaikkr-aiida`: command line front end built from cli/spec.py.
 
 With --json, stdout carries exactly one JSON object (also on failure); everything that

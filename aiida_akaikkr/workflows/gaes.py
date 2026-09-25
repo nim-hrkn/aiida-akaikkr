@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """AkaikkrGaesWorkChain: Gap-Anchored Ewidth Search (GAES) with AiiDA.
 
 STEP1 loop of pyakaikkr.gaes: go (fresh potential) -> dos (from the go potential, fixed small

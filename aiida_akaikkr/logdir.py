@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """Action log: one JSON line per action under ~/.aiida-akaikkr/log/<kind>-<YYYY-MM>.jsonl.
 
 No aiida import. Writing never raises: the log is a by-product of the action.

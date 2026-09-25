@@ -1,3 +1,5 @@
+# Copyright (c) 2022-2026 Hiori Kino.
+# Distributed under the terms of the Apache License, Version 2.0.
 """The single table of CLI subcommands.
 
 Read by `cli/main.py` (to build argparse and dispatch) and by `mcp/server.py`
