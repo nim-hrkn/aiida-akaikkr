@@ -64,3 +64,7 @@ AkaiKKRPythonUtil/docs/ewidth_tuning_scheme.md §15 と同じ規則。`Rb4p=vale
 - 図の線は go の ewidth（`aiida_akaikkr.plot.contour_bottom`）。dos の ewidth ではない。
 - 範囲を外れた ewidth は `old` にならない（2026-09-25 修正。それ以前はギャップに入っていれば範囲に関係なく `old` だった）。
 - 図（`plot --gaes-pk` を含む `plot.py` の全部）は pyakaikkr の配列ベースの描画関数 `pyakaikkr.plot`（`plot_dos`, `plot_pdos`, `plot_awk`, `plot_jij`, `plot_gaes_dos`）に ArrayData / Dict の配列を渡して描く（2026-09-26）。配色は `plot.STYLE`。
+
+## テスト
+
+`pytest tests/test_gaes.py`（8 件、daemon 不要）: `submit-gaes` の CLI / MCP の引数（orbital、min/max_ewidth、plot の gaes_pk）、`--orbital "Rb4p=valence, Bi6s=core"` が `gaes["orbitals"]` のリストになること、WorkChain の入出力ポートと終了コード 400 / 401 / 420〜423、`GAES_DEFAULTS`（Method 2、閾値、min/max None、dos_per_atom True）、entry point `akaikkr.gaes`、図の範囲の決め方 `_gaes_bounds`、原子あたり判定が pyakaikkr の `decide` と同じ規則であること、`_spin_sum`、`local_specx_for` の優先順位、aiida の配色が `pyakaikkr.plot.DEFAULT_STYLE` のキーに収まること。orm ノードを作る 2 件はプロファイル `akaikkr` を読み込む（無ければ skip）。実走の確認は本文の pk 3730 / 3021 など。
