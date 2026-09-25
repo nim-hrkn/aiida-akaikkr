@@ -275,11 +275,15 @@ h2("notes", "知っておくこと", "Things to know")
 both("""<ul>
 <li>ewidth をわずかに変えるだけで SCF の収束の可否が反転することがあります。収束したことは積分路がギャップにある証拠にはならず、逆も同じです。判定は DOS で行います。</li>
 <li>Hf は収束しない。AkaiKKR の reconf でエラーが起きる。</li>
-<li>多原子胞ではギャップ判定の DOS を原子あたりに直します（既定）。1 原子の CPA 用に決めた閾値をそのまま使うためです。</li></ul>""",
+<li>多原子胞ではギャップ判定の DOS を原子あたりに直します（既定）。1 原子の CPA 用に決めた閾値をそのまま使うためです。</li>
+<li>いまの GAES は全体の DOS だけで判定します。濃度の小さい成分（例: La<sub>0.999</sub>Ge<sub>0.001</sub> の Ge）の semicore は全体の DOS には濃度分しか現れず、閾値と同じ程度なので見つけられません。
+成分ごとの DOS（PDOS）を読んで判定に加える予定です（TODO）。</li></ul>""",
      """<ul>
 <li>A tiny change of ewidth can flip whether the SCF converges. Convergence is no evidence that the contour lies in a gap, and vice versa; the judgement is made on the DOS.</li>
 <li>Hf does not converge: AkaiKKR stops with an error in reconf.</li>
-<li>For cells with several atoms the DOS used for the gap judgement is taken per atom (default), so that thresholds set for one-atom CPA cells carry over.</li></ul>""")
+<li>For cells with several atoms the DOS used for the gap judgement is taken per atom (default), so that thresholds set for one-atom CPA cells carry over.</li>
+<li>GAES currently judges on the total DOS only. The semicore of a dilute component (e.g. Ge in La<sub>0.999</sub>Ge<sub>0.001</sub>) appears in the total DOS only in proportion to its
+concentration, comparable to the threshold, and is missed. Reading the DOS per component (PDOS) into the judgement is planned (TODO).</li></ul>""")
 
 # appendix: the report
 h2("appendix", "付録: SmCo5 のレポート（利点 4 の例の出力）", "Appendix: the SmCo5 report (output of the example of benefit 4)")
