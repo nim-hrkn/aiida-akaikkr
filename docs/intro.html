@@ -11441,7 +11441,7 @@ akaikkr-aiida report --pk 3799 --jij-pk 3887 --lang ja</code></pre>
 <div class="note">Everything can also be done with the CLI <code>akaikkr-aiida</code> (the MCP server is a thin layer that calls it). Actions are logged in <code>~/.aiida-akaikkr/log/</code>.</div></div>
 <div class="lang ja"><h2 id="setup">動かすまで</h2></div><div class="lang en"><h2 id="setup-en">Getting started</h2></div>
 <pre><code># conda env akaikkr: aiida-core 2.9, RabbitMQ, pyakaikkr, aiida-akaikkr
-pip install -e AkaiKKRPythonUtil/library/PyAkaiKKR    # pyakaikkr
+pip install -e &quot;AkaiKKRPythonUtil[ase]&quot;              # pyakaikkr (+ akaikkr_testscript)
 pip install -e aiida-akaikkr                           # plugin (entry points akaikkr.*)
 verdi presto --profile-name akaikkr                    # profile
 verdi computer setup ... / verdi code create ...       # computer (SLURM, ssh) and the installed specx

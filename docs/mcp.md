@@ -41,7 +41,7 @@ akaikkr-aiida submit-followup --go-pk 2630 --mode tc
 akaikkr-aiida dos --pk 2644 --emin -1 --emax 0.5 --max-points 100
 akaikkr-aiida plot --dos-pk 2644 --spc-pk 2654 --outdir figures --prefix Cu
 akaikkr-aiida plot --jij-pk 2057 --outdir figures --prefix FeRh05Pt05     # J_ij(R) の図と <prefix>_jij.csv
-akaikkr-aiida compare --pks 2805 --reference-json ../AkaiKKRPythonUtil/tests/akaikkr/reference/ifort.json
+akaikkr-aiida compare --pks 2805 --reference-json ../AkaiKKRPythonUtil/tests/testrun/akaikkr/reference/ifort.json
 akaikkr-aiida provenance --pk 2805 --fmt pdf
 ```
 
@@ -106,7 +106,7 @@ Claude Code に登録した `akaikkr-mcp`（`--allow-submit`、control 旗なし
 | dos | 2905 | 0 | -3303.610531279 | false | dos, pdos |
 | spc31 | 2918 | 0 | -3304.522140227 | false | Awk_up, klabel |
 
-- go の全エネルギーは `tests/akaikkr/reference/ifort.json` の `Cu_go` と一致します（Fermi 準位 0.6018404 Ry、モーメント 0）。
+- go の全エネルギーは `tests/testrun/akaikkr/reference/ifort.json` の `Cu_go` と一致します（Fermi 準位 0.6018404 Ry、モーメント 0）。
 - dos / spc の `converged: false` は正常です。go のポテンシャルからの one-shot 計算で SCF を回さないため、全エネルギーも意味を持ちません。
 - `kkr_wait` は最長 45 s しか待たないので、終わるまで繰り返し呼びます。`terminated: true` になるまで `kkr_results` は呼ばないでください（途中の mode が欠けます）。
 

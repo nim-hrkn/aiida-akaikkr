@@ -1,6 +1,6 @@
 # 既知の問題と参照値との差
 
-2026-09-24、mygardenx2（ifort ビルド、OpenMP 8 スレッド）での結果です。参照は AkaiKKRPythonUtil の `tests/akaikkr/reference/ifort.json` と `tests/akaikkr_cnd/reference/ifort.json`（128 スレッド EPYC 7702 で作成）。
+2026-09-24、mygardenx2（ifort ビルド、OpenMP 8 スレッド）での結果です。参照は AkaiKKRPythonUtil の `tests/testrun/akaikkr/reference/ifort.json` と `tests/testrun/akaikkr_cnd/reference/ifort.json`（128 スレッド EPYC 7702 で作成）。
 
 ## 1. 結果の要約
 

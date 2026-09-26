@@ -1,6 +1,6 @@
 """Compare a run_examples.py result JSON with an AkaiKKRPythonUtil reference JSON.
 
-    python example/compare_reference.py run_examples_result.json <path>/tests/akaikkr_cnd/reference/ifort.json
+    python example/compare_reference.py run_examples_result.json <path>/tests/testrun/akaikkr_cnd/reference/ifort.json
 """
 import json
 import sys

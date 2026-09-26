@@ -16,7 +16,7 @@ python example/run_cu_go_dos_spc.py --code specx-akaikkr@mygardenx2-slurm --ncor
 
 ## 2. run_examples.py（テストセット一括）
 
-AkaiKKRPythonUtil の `tests/akaikkr`（および `tests/akaikkr_cnd`）と同じ物質・同じパラメータで実行し、`tests/*/reference/ifort.json` と比べられるようにしたものです。
+AkaiKKRPythonUtil の `tests/testrun/akaikkr`（および `tests/testrun/akaikkr_cnd`）と同じ物質・同じパラメータで実行し、`tests/*/reference/ifort.json` と比べられるようにしたものです。
 
 ```bash
 # akaikkr セット（13 物質、65 CalcJob）
@@ -58,7 +58,7 @@ python example/run_examples.py --code specx-cnd@mygardenx2-slurm --displc --resu
 
 ```bash
 python example/compare_reference.py run_examples_result.json \
-    ../AkaiKKRPythonUtil/tests/akaikkr/reference/ifort.json
+    ../AkaiKKRPythonUtil/tests/testrun/akaikkr/reference/ifort.json
 ```
 
 te の相対差、moment、Tc、抵抗率・伝導度を並べます。2026-09-24 の結果は [known_issues.md](known_issues.md) にまとめてあります。

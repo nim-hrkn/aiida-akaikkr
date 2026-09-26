@@ -2,7 +2,7 @@
 
 The per-material parameters are taken from the AkaiKKR test script
 (`akaikkr_testscript.testrun_class._<name>_common_param`), so the results can
-be compared with `tests/akaikkr/reference/*.json` of AkaiKKRPythonUtil.
+be compared with `tests/testrun/akaikkr/reference/*.json` of AkaiKKRPythonUtil.
 
 Usage (inside the `akaikkr` conda env):
 

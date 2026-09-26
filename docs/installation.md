@@ -8,8 +8,7 @@ conda 環境 `akaikkr`（Python 3.11）に次を入れます。
 
 ```bash
 conda activate akaikkr
-pip install -e AkaiKKRPythonUtil/library/PyAkaiKKR[ase]
-pip install -e AkaiKKRPythonUtil/library/AkaiKKRTestScript
+pip install -e "AkaiKKRPythonUtil[ase]"    # pyakaikkr + akaikkr_testscript（2.0 から 1 つの配布物）
 pip install aiida-core            # 2.9.2
 pip install -e aiida-akaikkr
 verdi plugin list aiida.calculations | grep akaikkr   # 8 個（basic, go, fsm, dos, jij, tc, spc, cnd）

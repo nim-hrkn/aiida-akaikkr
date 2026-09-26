@@ -29,5 +29,5 @@ python example/plot_results.py --dos <dos pk> --spc <spc pk> [--jij <j3.0 pk>] -
 
 ## 関連
 
-- 計算結果の解析は `pyakaikkr`（AkaiKKRPythonUtil/library/PyAkaiKKR）に依存します。構造パラメータの生成には `akaikkr_testscript`（同 library/AkaiKKRTestScript）を使います。
+- 計算結果の解析は `pyakaikkr`（AkaiKKRPythonUtil/src/pyakaikkr）に依存します。構造パラメータの生成には `akaikkr_testscript`（同 src/akaikkr_testscript。AkaiKKRPythonUtil 2.0 からは両方が 1 つの配布物 `pyakaikkr` に入る）を使います。
 - AkaiKKRPythonUtil 側の文書は `AkaiKKRPythonUtil/docs/` にあります。

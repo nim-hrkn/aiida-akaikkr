@@ -32,7 +32,7 @@ last-digit differences).
 ## Requirements
 
 - Python >= 3.9, AiiDA >= 2 (tested with 2.9.2)
-- `pyakaikkr` and `akaikkr_testscript` from AkaiKKRPythonUtil (`pip install -e library/PyAkaiKKR[ase] library/AkaiKKRTestScript`)
+- `pyakaikkr` and `akaikkr_testscript` from AkaiKKRPythonUtil >= 2.0 (one distribution: `pip install -e "AkaiKKRPythonUtil[ase]"`)
 - pymatgen, numpy, ase (pulled in by the above)
 - an AkaiKKR `specx` binary registered as an AiiDA code
 

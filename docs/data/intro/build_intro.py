@@ -3,8 +3,8 @@ English selectable with a switch at the top (the choice is remembered in the bro
 inline SVG figures, the SmCo5 report appended at the end.
 
 SVG sources next to this script: architecture.svg (hand drawn; the English labels are substituted here),
-2682.dot.svg (verdi node graph generate 2682), atomic_levels.svg (tests/gaes/tools/plot_atomic_levels.py),
-alscnibi.svg and se4s_valence_core.svg (tests/gaes/tools/plot_orbital_rules.py on the tests/akaikkr GAES examples).
+2682.dot.svg (verdi node graph generate 2682), atomic_levels.svg (scripts/gaes_survey/plot_atomic_levels.py),
+alscnibi.svg and se4s_valence_core.svg (scripts/gaes_survey/plot_orbital_rules.py on the examples/gaes GAES examples of AkaiKKRPythonUtil).
 smco5_example.json holds the pks / results of the worked example. usage: python build_intro.py [out.html]
 """
 import html
@@ -263,7 +263,7 @@ both("""<table><tr><th>他の言い方</th><th>Claude が呼ぶもの</th></tr>
 # setup
 h2("setup", "動かすまで", "Getting started")
 shared(code("""# conda env akaikkr: aiida-core 2.9, RabbitMQ, pyakaikkr, aiida-akaikkr
-pip install -e AkaiKKRPythonUtil/library/PyAkaiKKR    # pyakaikkr
+pip install -e "AkaiKKRPythonUtil[ase]"              # pyakaikkr (+ akaikkr_testscript)
 pip install -e aiida-akaikkr                           # plugin (entry points akaikkr.*)
 verdi presto --profile-name akaikkr                    # profile
 verdi computer setup ... / verdi code create ...       # computer (SLURM, ssh) and the installed specx
