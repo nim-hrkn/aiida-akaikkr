@@ -199,11 +199,15 @@ def kkr_structure_from_cif(cif_path: str | None = None, preset: str | None = Non
     return run("structure", cif_path=cif_path, preset=preset, code=code, displc=displc, magtype=magtype)
 
 
-def kkr_submit_go(structure_pk: int, code: str | None = None, displc: bool = False, ncores: int | None = None,
-                  wallclock: int | None = None, label: str | None = None, parameters: str | None = None) -> dict:
-    """Submit a go (SCF) CalcJob from a common-parameter Dict pk. `parameters` is a JSON object of overrides."""
-    return run("submit-go", structure_pk=structure_pk, code=code, displc=displc, ncores=ncores,
-               wallclock=wallclock, label=label, parameters=parameters)
+def kkr_submit_go(structure_pk: int | None = None, comp: str | None = None, polytyp: str | None = None,
+                  lattice: str | None = None, magtype: str | None = None, code: str | None = None, displc: bool = False,
+                  ncores: int | None = None, wallclock: int | None = None, label: str | None = None,
+                  parameters: str | None = None) -> dict:
+    """Submit a go (SCF) CalcJob from a common-parameter Dict pk (structure_pk) or from a single-site CPA composition
+    such as "AlSiRhBi" or "Rh0.5Pt0.5" (comp, polytyp fcc/bcc, lattice expr|mjw|<a bohr>, magtype).
+    `parameters` is a JSON object of AkaiKKR parameter overrides."""
+    return run("submit-go", structure_pk=structure_pk, comp=comp, polytyp=polytyp, lattice=lattice, magtype=magtype,
+               code=code, displc=displc, ncores=ncores, wallclock=wallclock, label=label, parameters=parameters)
 
 
 def kkr_submit_followup(go_pk: int, mode: str, fspin: float | None = None, from_potential: bool = False,
@@ -215,12 +219,19 @@ def kkr_submit_followup(go_pk: int, mode: str, fspin: float | None = None, from_
 
 
 def kkr_submit_chain(structure_pk: int | None = None, preset: str | None = None, cif_path: str | None = None,
-                     modes: str | None = None, fspin: float | None = None, code: str | None = None,
+                     comp: str | None = None, polytyp: str | None = None, lattice: str | None = None,
+                     magtype: str | None = None, modes: str | None = None, fspin: float | None = None,
+                     spc_structure_pk: int | None = None, parameters: str | None = None, code: str | None = None,
                      displc: bool = False, ncores: int | None = None, wallclock: int | None = None,
                      label: str | None = None) -> dict:
-    """Submit go followed by the given modes (comma separated) as one WorkChain; returns the WorkChain pk."""
-    return run("submit-chain", structure_pk=structure_pk, preset=preset, cif_path=cif_path, modes=modes,
-               fspin=fspin, code=code, displc=displc, ncores=ncores, wallclock=wallclock, label=label)
+    """Submit go followed by the given modes (comma separated: dos, spc, tc, jij, fsm, cnd) as one WorkChain;
+    returns the WorkChain pk. The system is a common-parameter Dict (structure_pk), a preset, a CIF, or a
+    single-site CPA composition such as "AlSiRhBi" (comp, polytyp fcc/bcc, lattice, magtype).
+    `parameters` is a JSON object of AkaiKKR parameter overrides applied to every job; spc_structure_pk gives the
+    StructureData of the spc k-path when go has no structure output."""
+    return run("submit-chain", structure_pk=structure_pk, preset=preset, cif_path=cif_path, comp=comp, polytyp=polytyp,
+               lattice=lattice, magtype=magtype, modes=modes, fspin=fspin, spc_structure_pk=spc_structure_pk,
+               parameters=parameters, code=code, displc=displc, ncores=ncores, wallclock=wallclock, label=label)
 
 
 def kkr_submit_gaes(structure_pk: int | None = None, preset: str | None = None, cif_path: str | None = None,

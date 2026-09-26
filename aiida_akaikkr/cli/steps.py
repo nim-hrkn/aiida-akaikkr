@@ -35,6 +35,25 @@ def _overrides(parameters):
     return d
 
 
+def _common_from(code_node, structure_pk=None, comp=None, polytyp=None, lattice=None, magtype=None, preset=None,
+                 cif_path=None, displc=False, what="--structure-pk, --comp, --preset or --cif-path"):
+    """the common-parameter Dict of a submission: an existing pk, a single-site CPA composition, a preset or a CIF."""
+    from aiida import orm
+
+    from ..inputs import generic_common_param, preset_common_param, single_site_common_param
+
+    if structure_pk:
+        return _node(structure_pk)
+    if comp:
+        return single_site_common_param(orm.Str(comp), orm.Str(polytyp or "fcc"), orm.Str(lattice or "expr"),
+                                        orm.Str(magtype or "mag"))
+    if preset:
+        return preset_common_param(preset, code_node, displc, cif_path=cif_path)
+    if cif_path:
+        return generic_common_param(cif_path, code_node, displc)
+    raise ValueError(f"give {what}")
+
+
 def _job_info(node, code):
     return {"pk": node.pk, "label": node.label, "process_label": node.process_label, "code": code.full_label,
             "inputs": {k: v.pk for k, v in input_nodes(node).items() if k != "code"},
@@ -58,19 +77,21 @@ def structure_from_cif(cif_path=None, preset=None, code=None, displc=False, magt
     return info
 
 
-def submit_go(structure_pk, code=None, displc=False, ncores=None, wallclock=None, label=None, parameters=None,
-              caller="cli"):
+def submit_go(structure_pk=None, comp=None, polytyp=None, lattice=None, magtype=None, code=None, displc=False,
+              ncores=None, wallclock=None, label=None, parameters=None, caller="cli"):
     from aiida.engine import submit
 
     from ..inputs import build_calcjob
 
-    common = _node(structure_pk)
     code_node = _load_code(code)
+    common = _common_from(code_node, structure_pk=structure_pk, comp=comp, polytyp=polytyp, lattice=lattice,
+                          magtype=magtype, what="--structure-pk or --comp")
     builder = build_calcjob(code_node, "go", common, overrides=_overrides(parameters), displc=displc,
-                            ncores=ncores or 8, wallclock=wallclock or 7200, label=label or "go")
+                            ncores=ncores or 8, wallclock=wallclock or 7200, label=label or (comp and comp + "_go") or "go")
     node = submit(builder)
     info = _job_info(node, code_node)
-    logdir.append_jsonl("action", {"action": "submit", "mode": "go", "pk": node.pk, "caller": caller})
+    info["common_pk"] = common.pk
+    logdir.append_jsonl("action", {"action": "submit", "mode": "go", "pk": node.pk, "comp": comp, "caller": caller})
     return info
 
 
@@ -110,23 +131,17 @@ def submit_followup(go_pk, mode, fspin=None, from_potential=False, spc_structure
     return info
 
 
-def submit_chain(structure_pk=None, preset=None, cif_path=None, modes=None, fspin=None, code=None, displc=False,
+def submit_chain(structure_pk=None, preset=None, cif_path=None, comp=None, polytyp=None, lattice=None, magtype=None,
+                 modes=None, fspin=None, spc_structure_pk=None, parameters=None, code=None, displc=False,
                  ncores=None, wallclock=None, label=None, caller="cli"):
     from aiida import orm
     from aiida.engine import submit
 
-    from ..inputs import generic_common_param, preset_common_param
     from ..workflows.chain import AkaikkrChainWorkChain
 
     code_node = _load_code(code)
-    if structure_pk:
-        common = _node(structure_pk)
-    elif preset:
-        common = preset_common_param(preset, code_node, displc, cif_path=cif_path)
-    elif cif_path:
-        common = generic_common_param(cif_path, code_node, displc)
-    else:
-        raise ValueError("give --structure-pk, --preset or --cif-path")
+    common = _common_from(code_node, structure_pk=structure_pk, comp=comp, polytyp=polytyp, lattice=lattice,
+                          magtype=magtype, preset=preset, cif_path=cif_path, displc=displc)
 
     if modes:
         mode_list = [m.strip() for m in modes.split(",") if m.strip()]
@@ -141,16 +156,20 @@ def submit_chain(structure_pk=None, preset=None, cif_path=None, modes=None, fspi
                   fspin=orm.Float(fspin if fspin is not None else 1.0),
                   fsm_from_potential=orm.Bool(bool(preset) and preset in FSM_FROM_GO_POTENTIAL),
                   displc=orm.Bool(bool(displc)), ncores=orm.Int(ncores or 8), wallclock=orm.Int(wallclock or 7200),
-                  label=orm.Str(label or preset or "akaikkr"))
-    if preset in SPC_STRUCTURE_FROM and "spc" in mode_list:
+                  overrides=orm.Dict(dict=_overrides(parameters)),
+                  label=orm.Str(label or comp or preset or "akaikkr"))
+    if spc_structure_pk:
+        inputs["spc_structure"] = _node(spc_structure_pk)
+    if preset in SPC_STRUCTURE_FROM and "spc" in mode_list and not spc_structure_pk:
         raise ValueError(f"preset {preset} has no structure output for spc; submit spc separately with "
                          f"--spc-structure-pk from a {SPC_STRUCTURE_FROM[preset]} go")
     node = submit(AkaikkrChainWorkChain, **inputs)
     info = {"pk": node.pk, "process_label": node.process_label, "label": inputs["label"].value,
             "code": code_node.full_label, "common_pk": common.pk, "modes": mode_list,
-            "fspin": inputs["fspin"].value, "fsm_from_potential": inputs["fsm_from_potential"].value}
+            "fspin": inputs["fspin"].value, "fsm_from_potential": inputs["fsm_from_potential"].value,
+            "spc_structure_pk": spc_structure_pk, "overrides": _overrides(parameters)}
     logdir.append_jsonl("action", {"action": "submit", "mode": "chain", "pk": node.pk, "modes": mode_list,
-                                   "preset": preset, "caller": caller})
+                                   "preset": preset, "comp": comp, "caller": caller})
     return info
 
 
@@ -161,21 +180,11 @@ def submit_gaes(structure_pk=None, preset=None, cif_path=None, comp=None, polyty
     from aiida import orm
     from aiida.engine import submit
 
-    from ..inputs import generic_common_param, preset_common_param, single_site_common_param
     from ..workflows.gaes import AkaikkrGaesWorkChain
 
     code_node = _load_code(code)
-    if structure_pk:
-        common = _node(structure_pk)
-    elif comp:
-        common = single_site_common_param(orm.Str(comp), orm.Str(polytyp or "fcc"), orm.Str(lattice or "expr"),
-                                          orm.Str(magtype or "mag"))
-    elif preset:
-        common = preset_common_param(preset, code_node, displc, cif_path=cif_path)
-    elif cif_path:
-        common = generic_common_param(cif_path, code_node, displc)
-    else:
-        raise ValueError("give --structure-pk, --comp, --preset or --cif-path")
+    common = _common_from(code_node, structure_pk=structure_pk, comp=comp, polytyp=polytyp, lattice=lattice,
+                          magtype=magtype, preset=preset, cif_path=cif_path, displc=displc)
     gaes = {k: v for k, v in dict(ewidth_init=ewidth_init, method=method, dosth=dosth, dosth2=dosth2,
                                   min_ewidth=min_ewidth, max_ewidth=max_ewidth, max_ew=max_ew, ewidth_dos=ewidth_dos,
                                   ref=ref).items() if v is not None}

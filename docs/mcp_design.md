@@ -49,9 +49,9 @@ aiida_akaikkr/
 | kkr_daemon_start / kkr_daemon_stop | control | workers | 実行結果。記録する | daemon-start / daemon-stop |
 | kkr_structure_from_cif | submit | cif_path, code, preset?, displc, backend(cif/ase) | 共通パラメータ Dict の pk、type 一覧、a、brvtyp | structure |
 | kkr_presets | — | | presets.py の物質名、CIF、後続モード、fspin、cnd の有無 | presets |
-| kkr_submit_go | submit | structure_pk（Dict）, code, magtype?, parameters?（上書き dict）, displc, ncores, wallclock, label | go の pk、SLURM への投入は非同期 | submit-go |
+| kkr_submit_go | submit | structure_pk（Dict）or comp（単一サイト CPA 組成; polytyp, lattice, magtype）, code, parameters?（上書き dict）, displc, ncores, wallclock, label | go の pk、SLURM への投入は非同期 | submit-go |
 | kkr_submit_followup | submit | go_pk, mode(dos/spc/tc/jij/fsm/cnd), fspin?, from_potential?, ncores, wallclock | 後続 CalcJob の pk | submit-followup |
-| kkr_submit_chain | submit | structure_pk or (cif_path + preset), code, modes[], ncores, wallclock | AkaikkrChainWorkChain の pk | submit-chain |
+| kkr_submit_chain | submit | structure_pk or preset / cif_path or comp（polytyp, lattice, magtype）, code, modes[], fspin?, spc_structure_pk?, parameters?（全ジョブへの上書き dict）, ncores, wallclock, label | AkaikkrChainWorkChain の pk | submit-chain |
 | kkr_submit_preset | submit | preset（例 Fe）, code, displc, modes? | 同上（プリセットの共通パラメータで chain を投入） | submit-preset |
 | kkr_process | — | pk | state、exit_status、exit_message、label、scheduler state、job id、入力ノード pk、出力ポート一覧、最後の report 3 行 | process |
 | kkr_list | — | label_prefix?, days?, state?, limit | 直近のプロセス（pk、label、state、exit、作成時刻） | list |

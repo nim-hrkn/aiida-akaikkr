@@ -16,6 +16,12 @@ _CODE = ("str", False, "code label, e.g. specx-akaikkr@mygardenx2-slurm (default
 _NCORES = ("int", False, "OpenMP threads (num_cores_per_mpiproc), default 8")
 _WALLCLOCK = ("int", False, "max wallclock seconds, default 7200")
 _DISPLC = ("bool", False, "add displc (required by the akaikkr_cnd build)")
+_PARAMETERS = ("str", False, "JSON dict of AkaiKKR parameter overrides applied to every job")
+# a single-site CPA composition instead of a CIF / preset (calcfunction single_site_common_param)
+_COMP = {"comp": ("str", False, "single-site CPA composition, e.g. AlSiRhBi or Rh0.5Pt0.5"),
+         "polytyp": ("str", False, "bravais lattice of --comp (default fcc)"),
+         "lattice": ("str", False, "expr | mjw | <a in bohr> for --comp (default expr)"),
+         "magtype": ("str", False, "magtyp of --comp (default mag)")}
 
 SUBCOMMANDS = {
     # ---- read
@@ -87,8 +93,9 @@ SUBCOMMANDS = {
                                "code": _CODE, "displc": _DISPLC,
                                "magtype": ("str", False, "nmag|mag|lmd (default: preset value or nmag)")}),
     "submit-go": dict(kind=SUBMIT, impl="aiida_akaikkr.cli.steps:submit_go",
-                      help="submit a go (SCF) CalcJob",
-                      options={"structure_pk": ("int", True, "pk of the common-parameter Dict (from `structure`)"),
+                      help="submit a go (SCF) CalcJob from a common-parameter Dict or a single-site CPA composition",
+                      options={"structure_pk": ("int", False, "pk of the common-parameter Dict (from `structure`)"),
+                               **_COMP,
                                "code": _CODE, "displc": _DISPLC, "ncores": _NCORES, "wallclock": _WALLCLOCK,
                                "label": ("str", False, "process label"),
                                "parameters": ("str", False, "JSON dict of AkaiKKR parameters to override")}),
@@ -106,8 +113,11 @@ SUBCOMMANDS = {
                          options={"structure_pk": ("int", False, "pk of the common-parameter Dict"),
                                   "preset": ("str", False, "preset name (makes the structure if structure_pk is not given)"),
                                   "cif_path": ("str", False, "CIF file (with --preset for the parameters)"),
+                                  **_COMP,
                                   "modes": ("str", False, "comma separated modes (default: preset modes)"),
                                   "fspin": ("float", False, "fsm moment (default: preset)"),
+                                  "spc_structure_pk": ("int", False, "spc: StructureData for the k-path (default: structure output of go)"),
+                                  "parameters": _PARAMETERS,
                                   "code": _CODE, "displc": _DISPLC, "ncores": _NCORES, "wallclock": _WALLCLOCK,
                                   "label": ("str", False, "label prefix (default: preset name)")}),
     "report": dict(kind=READ, impl="aiida_akaikkr.report:report_cli",
@@ -124,10 +134,7 @@ SUBCOMMANDS = {
                         options={"structure_pk": ("int", False, "pk of the common-parameter Dict"),
                                  "preset": ("str", False, "preset name (makes the structure if structure_pk is not given)"),
                                  "cif_path": ("str", False, "CIF file (with --preset for the parameters)"),
-                                 "comp": ("str", False, "single-site CPA composition, e.g. AlSiRhBi or Rh0.5Pt0.5"),
-                                 "polytyp": ("str", False, "bravais lattice of --comp (default fcc)"),
-                                 "lattice": ("str", False, "expr | mjw | <a in bohr> for --comp (default expr)"),
-                                 "magtype": ("str", False, "magtyp of --comp (default mag)"),
+                                 **_COMP,
                                  "ewidth_init": ("float", False, "initial ewidth (default 1.2)"),
                                  "method": ("int", False, "1 or 2 (default 2)"),
                                  "dosth": ("float", False, "coarse threshold (default 2e-2)"),
@@ -139,7 +146,7 @@ SUBCOMMANDS = {
                                  "max_ew": ("int", False, "max number of ewidth values (default 10)"),
                                  "ewidth_dos": ("float", False, "dos window parameter (default 3.0, auto-widened)"),
                                  "ref": ("float", False, "cemesr ref of the build (0.75 akaikkr, 0.5 cpa2021v01/cnd)"),
-                                 "parameters": ("str", False, "JSON dict of AkaiKKR parameter overrides for every job"),
+                                 "parameters": _PARAMETERS,
                                  "code": _CODE, "displc": _DISPLC, "ncores": _NCORES, "wallclock": _WALLCLOCK,
                                  "label": ("str", False, "label prefix (default: comp or preset)")}),
     # ---- control

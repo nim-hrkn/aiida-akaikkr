@@ -93,3 +93,22 @@ def test_cli_parser_builds_and_json_failure_is_json():
     import json
     out = json.loads(proc.stdout.strip().splitlines()[-1])
     assert out["ok"] is False and "error" in out
+
+
+def test_comp_and_overrides_options():
+    """submit-go accepts a composition instead of a structure pk; submit-chain takes overrides and the spc structure."""
+    from aiida_akaikkr.cli import steps
+    from aiida_akaikkr.cli.spec import SUBCOMMANDS
+    from aiida_akaikkr.mcp import server
+
+    for sub in ("submit-go", "submit-chain", "submit-gaes"):
+        opts = SUBCOMMANDS[sub]["options"]
+        assert {"comp", "polytyp", "lattice", "magtype", "parameters"} <= set(opts)
+        assert opts["structure_pk"][1] is False, sub + ": structure_pk must be optional"
+    assert "spc_structure_pk" in SUBCOMMANDS["submit-chain"]["options"]
+    assert {"comp", "spc_structure_pk", "parameters"} <= set(inspect.signature(server.kkr_submit_chain).parameters)
+    assert "comp" in inspect.signature(server.kkr_submit_go).parameters
+    argv = server.build_argv("submit-chain", {"comp": "AlSiRhBi", "parameters": '{"bzqlty": 6}', "spc_structure_pk": 12})
+    assert argv[-6:] == ["--comp", "AlSiRhBi", "--spc-structure-pk", "12", "--parameters", '{"bzqlty": 6}']
+    with pytest.raises(ValueError, match="--structure-pk or --comp"):
+        steps._common_from(None, what="--structure-pk or --comp")

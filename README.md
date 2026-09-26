@@ -87,6 +87,7 @@ same subcommands as `kkr_*` tools to Claude) are installed with `pip install -e 
 ```bash
 akaikkr-aiida presets
 akaikkr-aiida submit-chain --preset Fe --code specx-akaikkr@mygardenx2-slurm   # go -> fsm, tc, j3.0, dos, spc31 as one WorkChain
+akaikkr-aiida submit-chain --comp AlSiRhBi --modes dos --parameters '{"bzqlty": 6}' --code ...   # single-site CPA composition, overrides for every job
 akaikkr-aiida results --pk <workchain pk>
 akaikkr-mcp --allow-submit          # read-only tools are always on; submit/control tools need flags
 ```

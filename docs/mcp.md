@@ -33,6 +33,8 @@ akaikkr-aiida presets
 akaikkr-aiida structure --preset Fe --code specx-akaikkr@mygardenx2-slurm          # 共通パラメータ Dict → pk
 akaikkr-aiida submit-chain --preset Fe --code specx-akaikkr@mygardenx2-slurm      # go → fsm,tc,jij,dos,spc
 akaikkr-aiida submit-chain --cif-path my.cif --modes dos,spc --code specx-akaikkr@mygardenx2-slurm
+akaikkr-aiida submit-chain --comp AlSiRhBi --polytyp fcc --modes dos --parameters '{"bzqlty": 6}' --code ...   # 単一サイト CPA 組成、全ジョブへの上書き
+akaikkr-aiida submit-go --comp Cu --magtype nmag --code ...                          # go だけ（--structure-pk の代わりに --comp）
 akaikkr-aiida process --pk 2805
 akaikkr-aiida results --pk 2805                       # chain なら各モードの要約
 akaikkr-aiida submit-followup --go-pk 2630 --mode tc
